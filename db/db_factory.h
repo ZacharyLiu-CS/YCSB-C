@@ -14,7 +14,6 @@
 #include "db/basic_db.h"
 #include "db/lock_stl_db.h"
 #include "db/leveldb_db.h"
-#include "db/rocksdb_db.h"
 #include <string>
 #include <memory>
 namespace ycsbc {
