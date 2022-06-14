@@ -9,7 +9,7 @@ TEST(HistogramTest, TestAddPerformance){
   utils::Histogram histogram_list;
   utils::Timer<std::chrono::milliseconds> timer;
   const int t = 154;
-  const int times = 100000;
+  const int times = 20000;
   double values[t] = {
     1,
     2,

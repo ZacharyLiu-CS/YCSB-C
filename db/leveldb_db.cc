@@ -23,17 +23,17 @@ namespace ycsbc {
 
   LevelDB::LevelDB(const char *dbfilename) :no_found(0){
     Config_Reader config_reader = Config_Reader();
-    db_config dc = config_reader.get_config("leveldb");
+    db_config *dc = static_cast<db_config*>(config_reader.get_config("leveldb"));
 
     //create database if not exists
     options.create_if_missing = true;
-    options.enable_direct_io = dc.enable_direct_io_;
-    options.enable_compaction = dc.enable_compaction_;
-    options.thread_compaction = dc.thread_compaction_;
-    options.filter_policy = leveldb::NewBloomFilterPolicy(dc.bloom_bits_);
-    options.block_cache = leveldb::NewLRUCache(dc.block_cache_size_);
-    options.write_buffer_size = dc.memtable_size_;
-    options.max_file_size = dc.sst_file_size_;
+    options.enable_direct_io = dc->enable_direct_io_;
+    options.enable_compaction = dc->enable_compaction_;
+    options.thread_compaction = dc->thread_compaction_;
+    options.filter_policy = leveldb::NewBloomFilterPolicy(dc->bloom_bits_);
+    options.block_cache = leveldb::NewLRUCache(dc->block_cache_size_);
+    options.write_buffer_size = dc->memtable_size_;
+    options.max_file_size = dc->sst_file_size_;
     leveldb::Status s = leveldb::DB::Open(options,dbfilename,&db_);
     if(!s.ok()){
       cerr << "init leveldb failed!"<<endl;
