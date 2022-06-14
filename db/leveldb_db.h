@@ -9,46 +9,50 @@
 #ifndef YCSB_C_LEVELDB_DB_H
 #define YCSB_C_LEVELDB_DB_H
 
+#include <cstdint>
+#include <string>
+#include <vector>
+
 #include "core/config_reader.h"
 #include "core/db.h"
 #include "leveldb/db.h"
 #include "leveldb/options.h"
 
+
 namespace ycsbc {
-  class LevelDB : public DB {
-    public:
-      LevelDB(const char *dbfilename);
-      int Read(const std::string &table, const std::string &key,
-          const std::vector<std::string> *fields,
-          std::vector<KVPair> &result);
 
-      int Scan(const std::string &table, const std::string &key,
-          int len, const std::vector<std::string> *fields,
-          std::vector<std::vector<KVPair>> &result);
+class LevelDB : public DB {
+  public:
+  LevelDB(const char* dbfilename);
+  int Read(const std::string& table, const std::string& key,
+      const std::vector<std::string>* fields,
+      std::vector<KVPair>& result);
 
-      int Insert(const std::string &table, const std::string &key,
-          std::vector<KVPair> &values);
+  int Scan(const std::string& table, const std::string& key,
+      int len, const std::vector<std::string>* fields,
+      std::vector<std::vector<KVPair>>& result);
 
-      int Update(const std::string &table, const std::string &key,
-          std::vector<KVPair> &values);
+  int Insert(const std::string& table, const std::string& key,
+      std::vector<KVPair>& values);
 
+  int Update(const std::string& table, const std::string& key,
+      std::vector<KVPair>& values);
 
-      int Delete(const std::string &table, const std::string &key);
+  int Delete(const std::string& table, const std::string& key);
 
-      void close();
+  void close();
 
-      void printStats();
+  void printStats();
 
-      ~LevelDB();
+  ~LevelDB();
 
-    private:
-      leveldb::DB *db_;
-      leveldb::Options options;
-      unsigned no_found;
+  private:
+  leveldb::DB* db_;
+  leveldb::Options options;
+  unsigned no_found;
 
-  }; //end of LevelDB
+}; //end of LevelDB
 
-}  //ycsbc
+} //ycsbc
 
 #endif //YCSB_C_LEVELDB_DB_H
-
