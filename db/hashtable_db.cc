@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include "db.h"
 #include "lib/string_hashtable.h"
 
 using std::string;
@@ -18,11 +19,11 @@ using vmp::StringHashtable;
 
 namespace ycsbc {
 
-int HashtableDB::Read(const string &table, const string &key,
+Status HashtableDB::Read(const string &table, const string &key,
     const vector<string> *fields, vector<KVPair> &result) {
   string key_index(table + key);
   FieldHashtable *field_table = key_table_->Get(key_index.c_str());
-  if (!field_table) return DB::kErrorNoData;
+  if (!field_table) return Status::kErrorNoData;
 
   result.clear();
   if (!fields) {
@@ -37,10 +38,10 @@ int HashtableDB::Read(const string &table, const string &key,
       result.push_back(std::make_pair(field, value));
     }
   }
-  return DB::kOK;
+  return Status::kOK;
 }
 
-int HashtableDB::Scan(const string &table, const string &key, int len,
+Status HashtableDB::Scan(const string &table, const string &key, int len,
     const vector<string> *fields, vector<vector<KVPair>> &result) {
   string key_index(table + key);
   vector<KeyHashtable::KVPair> key_pairs =
@@ -67,10 +68,10 @@ int HashtableDB::Scan(const string &table, const string &key, int len,
 
     result.push_back(field_values);
   }
-  return DB::kOK;
+  return Status::kOK;
 }
 
-int HashtableDB::Update(const string &table, const string &key,
+Status HashtableDB::Update(const string &table, const string &key,
     vector<KVPair> &values) {
   string key_index(table + key);
   FieldHashtable *field_table = key_table_->Get(key_index.c_str());
@@ -92,10 +93,10 @@ int HashtableDB::Update(const string &table, const string &key,
       }
     }
   }
-  return DB::kOK;
+  return Status::kOK;
 }
 
-int HashtableDB::Insert(const string &table, const string &key,
+Status HashtableDB::Insert(const string &table, const string &key,
     vector<KVPair> &values) {
   string key_index(table + key);
   FieldHashtable *field_table = key_table_->Get(key_index.c_str());
@@ -109,21 +110,21 @@ int HashtableDB::Insert(const string &table, const string &key,
     bool ok = field_table->Insert(field_pair.first.c_str(), value);
     if (!ok) {
       DeleteString(value);
-      return DB::kErrorConflict;
+      return Status::kErrorConflict;
     }
   }
-  return DB::kOK;
+  return Status::kOK;
 }
 
-int HashtableDB::Delete(const string &table, const string &key) {
+Status HashtableDB::Delete(const string &table, const string &key) {
   string key_index(table + key);
   FieldHashtable *field_table = key_table_->Remove(key_index.c_str());
   if (!field_table) {
-    return DB::kErrorNoData;
+    return Status::kErrorNoData;
   } else {
     DeleteFieldHashtable(field_table);
   }
-  return DB::kOK;
+  return Status::kOK;
 }
 
 } // ycsbc

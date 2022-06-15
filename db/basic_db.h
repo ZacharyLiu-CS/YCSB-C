@@ -28,7 +28,7 @@ class BasicDB : public DB {
     cout << "A new thread begins working." << endl;
   }
 
-  int Read(const std::string &table, const std::string &key,
+ Status Read(const std::string &table, const std::string &key,
            const std::vector<std::string> *fields,
            std::vector<KVPair> &result) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -42,10 +42,10 @@ class BasicDB : public DB {
     } else {
       cout  << " < all fields >" << endl;
     }
-    return 0;
+    return Status::kOK;
   }
 
-  int Scan(const std::string &table, const std::string &key,
+  Status Scan(const std::string &table, const std::string &key,
            int len, const std::vector<std::string> *fields,
            std::vector<std::vector<KVPair>> &result) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -59,10 +59,10 @@ class BasicDB : public DB {
     } else {
       cout  << " < all fields >" << endl;
     }
-    return 0;
+    return Status::kOK;
   }
 
-  int Update(const std::string &table, const std::string &key,
+  Status Update(const std::string &table, const std::string &key,
              std::vector<KVPair> &values) {
     std::lock_guard<std::mutex> lock(mutex_);
     cout << "UPDATE " << table << ' ' << key << " [ ";
@@ -70,10 +70,10 @@ class BasicDB : public DB {
       cout << v.first << '=' << v.second << ' ';
     }
     cout << ']' << endl;
-    return 0;
+    return Status::kOK;
   }
 
-  int Insert(const std::string &table, const std::string &key,
+  Status Insert(const std::string &table, const std::string &key,
              std::vector<KVPair> &values) {
     std::lock_guard<std::mutex> lock(mutex_);
     cout << "INSERT " << table << ' ' << key << " [ ";
@@ -81,13 +81,13 @@ class BasicDB : public DB {
       cout << v.first << '=' << v.second << ' ';
     }
     cout << ']' << endl;
-    return 0;
+    return Status::kOK;
   }
 
-  int Delete(const std::string &table, const std::string &key) {
+  Status Delete(const std::string &table, const std::string &key) {
     std::lock_guard<std::mutex> lock(mutex_);
     cout << "DELETE " << table << ' ' << key << endl;
-    return 0; 
+    return Status::kOK;
   }
 
  private:

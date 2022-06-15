@@ -18,27 +18,26 @@
 #include "leveldb/db.h"
 #include "leveldb/options.h"
 
-
 namespace ycsbc {
 
 class LevelDB : public DB {
   public:
   LevelDB(const char* dbfilename);
-  int Read(const std::string& table, const std::string& key,
+  Status Read(const std::string& table, const std::string& key,
       const std::vector<std::string>* fields,
       std::vector<KVPair>& result);
 
-  int Scan(const std::string& table, const std::string& key,
+  Status Scan(const std::string& table, const std::string& key,
       int len, const std::vector<std::string>* fields,
       std::vector<std::vector<KVPair>>& result);
 
-  int Insert(const std::string& table, const std::string& key,
+  Status Insert(const std::string& table, const std::string& key,
       std::vector<KVPair>& values);
 
-  int Update(const std::string& table, const std::string& key,
+  Status Update(const std::string& table, const std::string& key,
       std::vector<KVPair>& values);
 
-  int Delete(const std::string& table, const std::string& key);
+  Status Delete(const std::string& table, const std::string& key);
 
   void close();
 

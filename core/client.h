@@ -42,7 +42,7 @@ namespace ycsbc {
     std::string key = workload_.NextSequenceKey();
     std::vector<DB::KVPair> pairs;
     workload_.BuildValues(pairs);
-    return (db_->Insert(workload_.NextTable(), key, pairs) == DB::kOK);
+    return (db_->Insert(workload_.NextTable(), key, pairs) == Status::kOK);
   }
 
   inline bool Client::DoTransaction() {
@@ -67,7 +67,7 @@ namespace ycsbc {
         throw utils::Exception("Operation request is not recognized!");
     }
     assert(status >= 0);
-    return (status == DB::kOK);
+    return (status == Status::kOK);
   }
 
   inline int Client::TransactionRead() {

@@ -15,6 +15,7 @@
 
 namespace ycsbc {
 
+// status of DB operation
 enum Status {
   kOK = 0,
   kErrorNoData,
@@ -23,10 +24,6 @@ enum Status {
 class DB {
   public:
   typedef std::pair<std::string, std::string> KVPair;
-  // status of DB operation
-  static const int kOK = 0;
-  static const int kErrorNoData = 1;
-  static const int kErrorConflict = 2;
   ///
   /// Initializes any state for accessing this DB.
   /// Called once per DB client (thread); there is a single DB instance globally.
@@ -47,7 +44,7 @@ class DB {
   /// @param result A vector of field/value pairs for the result.
   /// @return Zero on success, or a non-zero error code on error/record-miss.
   ///
-  virtual int Read(const std::string& table, const std::string& key,
+  virtual Status Read(const std::string& table, const std::string& key,
       const std::vector<std::string>* fields,
       std::vector<KVPair>& result)
       = 0;
@@ -63,7 +60,7 @@ class DB {
   ///        pairs for one record
   /// @return Zero on success, or a non-zero error code on error.
   ///
-  virtual int Scan(const std::string& table, const std::string& key,
+  virtual Status Scan(const std::string& table, const std::string& key,
       int record_count, const std::vector<std::string>* fields,
       std::vector<std::vector<KVPair>>& result)
       = 0;
@@ -77,7 +74,7 @@ class DB {
   /// @param values A vector of field/value pairs to update in the record.
   /// @return Zero on success, a non-zero error code on error.
   ///
-  virtual int Update(const std::string& table, const std::string& key,
+  virtual Status Update(const std::string& table, const std::string& key,
       std::vector<KVPair>& values)
       = 0;
   ///
@@ -89,7 +86,7 @@ class DB {
   /// @param values A vector of field/value pairs to insert in the record.
   /// @return Zero on success, a non-zero error code on error.
   ///
-  virtual int Insert(const std::string& table, const std::string& key,
+  virtual Status Insert(const std::string& table, const std::string& key,
       std::vector<KVPair>& values)
       = 0;
   ///
@@ -99,7 +96,7 @@ class DB {
   /// @param key The key of the record to delete.
   /// @return Zero on success, a non-zero error code on error.
   ///
-  virtual int Delete(const std::string& table, const std::string& key) = 0;
+  virtual Status Delete(const std::string& table, const std::string& key) = 0;
 
   virtual ~DB() { }
 };
