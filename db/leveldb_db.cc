@@ -17,12 +17,19 @@
 #include "leveldb/options.h"
 #include "leveldb/status.h"
 
+#define LOGOUT(msg)                   \
+  do{                                 \
+    std::cerr << msg << std::endl;    \
+    exit(0);                          \
+  } while (0)
+
 namespace ycsbc {
 
 LevelDB::LevelDB(const char* dbfilename)
-    : no_found(0){
+    : no_found_(0)
+{
   Config_Reader config_reader = Config_Reader();
-  db_config* dc = static_cast<db_config*>(config_reader.get_config("leveldb"));
+  db_config* dc = static_cast<db_config*>(config_reader.get_config("leveldb").get());
 
   //create database if not exists
   options.create_if_missing = true;
@@ -35,22 +42,21 @@ LevelDB::LevelDB(const char* dbfilename)
   options.max_file_size = dc->sst_file_size_;
   leveldb::Status s = leveldb::DB::Open(options, dbfilename, &db_);
   if (!s.ok()) {
-    std::cerr << "init leveldb failed!" << std::endl;
-    exit(0);
+    LOGOUT("init leveldb failed!");
   }
 }
 
 Status LevelDB::Read(const std::string& table, const std::string& key,
                      const std::vector<std::string>* fields,
-                     std::vector<KVPair>& result){
+                     std::vector<KVPair>& result)
+{
   std::string value;
   leveldb::Status s = db_->Get(leveldb::ReadOptions(), key, &value);
   if (s.IsNotFound()) {
-    this->no_found++;
+    no_found_++;
     return Status::kErrorNoData;
   } else if (!s.ok()) {
-    std::cerr << s.ToString() << std::endl;
-    exit(0);
+    LOGOUT(s.ToString());
   }
   if (fields != nullptr) {
     DeserializeRowFilter(result, value, *fields);
@@ -62,7 +68,8 @@ Status LevelDB::Read(const std::string& table, const std::string& key,
 
 Status LevelDB::Scan(const std::string& table, const std::string& key, int len,
                   const std::vector<std::string>* fields,
-                  std::vector<std::vector<KVPair>>& result){
+                  std::vector<std::vector<KVPair>>& result)
+{
   leveldb::Iterator* iter = db_->NewIterator(leveldb::ReadOptions());
   iter->Seek(key);
   for (int i = 0; iter->Valid() && i < len; i++) {
@@ -81,31 +88,31 @@ Status LevelDB::Scan(const std::string& table, const std::string& key, int len,
 }
 
 Status LevelDB::Insert(const std::string& table, const std::string& key,
-                       std::vector<KVPair>& values){
+                       std::vector<KVPair>& values)
+{
   std::string value;
   SerializeRow(values, value);
 
   leveldb::Status s;
   s = db_->Put(leveldb::WriteOptions(), key, value);
   if (!s.ok()) {
-    std::cerr << s.ToString() << std::endl;
-    exit(0);
+    LOGOUT(s.ToString());
   }
   return Status::kOK;
 }
 
 Status LevelDB::Update(const std::string& table, const std::string& key,
-                       std::vector<KVPair>& values){
+                       std::vector<KVPair>& values)
+{
   // first read values from db
   std::string value;
   leveldb::Status s;
   s = db_->Get(leveldb::ReadOptions(), key, &value);
   if (s.IsNotFound()) {
-    this->no_found++;
+    no_found_++;
     return Status::kErrorNoData;
   } else if (!s.ok()) {
-    std::cerr << s.ToString() << std::endl;
-    exit(0);
+    LOGOUT(s.ToString());
   }
   // then update the specific field
   std::vector<KVPair> current_values;
@@ -128,8 +135,7 @@ Status LevelDB::Update(const std::string& table, const std::string& key,
   SerializeRow(current_values, value);
   s = db_->Put(leveldb::WriteOptions(), key, value);
   if (!s.ok()) {
-    std::cerr << s.ToString() << std::endl;
-    exit(0);
+    LOGOUT(s.ToString());
   }
   return Status::kOK;
 }
@@ -138,8 +144,7 @@ Status LevelDB::Delete(const std::string& table, const std::string& key)
 {
   leveldb::Status s = db_->Delete(leveldb::WriteOptions(), key);
   if (!s.ok()) {
-    std::cerr << s.ToString() << std::endl;
-    exit(0);
+    LOGOUT(s.ToString());
   }
   return Status::kOK;
 }
@@ -149,7 +154,7 @@ void LevelDB::printStats()
   std::string stats;
   db_->GetProperty("leveldb.stats", &stats);
   std::cout << stats << std::endl;
-  std::cout << "Missing operations count : " << this->no_found << std::endl;
+  std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
 
 LevelDB::~LevelDB()

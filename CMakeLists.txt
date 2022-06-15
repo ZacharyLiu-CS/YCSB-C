@@ -8,6 +8,12 @@ project(ycsbc)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -pthread")
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBPMEMKV REQUIRED libpmemkv)
+
+option(ENGINE_TREE3 "enable experimental tree3 engine" ON)
+
+
 #4. head file path
 include_directories(
   ${PROJECT_SOURCE_DIR}
@@ -16,6 +22,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/include
   ${PROJECT_SOURCE_DIR}/third_party/googletest/googletest/include
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/include
+  ${LIBPMEMKV_INCLUDE_DIRS}
   )
 
 #5. third path link path
@@ -23,6 +30,7 @@ link_directories(
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/build/
   ${PROJECT_SOURCE_DIR}/third_party/googletest/build/lib/
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/build/
+  ${LIBPMEMKV_LIBRARY_DIRS}
   )
 
 #6. source code file path
@@ -39,6 +47,7 @@ add_executable(${PROJECT_NAME} ${MAIN_FILE} ${SOURCE_FILE})
 target_link_libraries(${PROJECT_NAME}
   pthread
   leveldb
+  pmemkv
   yaml-cpp
   gtest
   snappy
@@ -67,6 +76,7 @@ if (GTEST_FOUND)
       yaml-cpp
       gtest
       leveldb
+      pmemkv
       pthread
       snappy
       )

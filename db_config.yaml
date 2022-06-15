@@ -14,3 +14,7 @@ rocksdb:
   block_cache_size: "8GB" # e.g. "100MB" or "10GB"
   memtable_size: "128MB" # e.g. "64MB"
   sst_file_size: "32MB"
+pmemkv:
+  create_if_missing: true
+  db_size: "8GB"
+  engine_type: "stree"

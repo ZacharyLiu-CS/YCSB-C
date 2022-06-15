@@ -13,6 +13,7 @@
 #include "yaml-cpp/yaml.h"
 #include <map>
 #include <memory>
+#include <iostream>
 #include <string>
 #include <utility>
 #include <yaml-cpp/node/node.h>
@@ -65,7 +66,9 @@ struct db_config : public config_templates {
 
 // config for pmemkv
 struct pmemkv_config : public config_templates {
+  bool create_if_missing_;
   uint64_t db_size_;
+  std::string engine_type_;
 };
 // other ...
 
@@ -75,12 +78,15 @@ namespace YAML {
 // encode and decode for pmemkv_config
 template <>
 struct convert<ycsbc::pmemkv_config> {
-  static YAML::Node encode(const ycsbc::pmemkv_config& dc)
+  static YAML::Node encode(const ycsbc::pmemkv_config& pc)
   {
     Node node;
     std::string db_size;
-    ycsbc::convert_to_string(db_size, dc.db_size_);
+    ycsbc::convert_to_string(db_size, pc.db_size_);
+    // push back all config
+    node.push_back(pc.create_if_missing_);
     node.push_back(db_size);
+    node.push_back(pc.engine_type_);
     return node;
   }
 
@@ -90,7 +96,9 @@ struct convert<ycsbc::pmemkv_config> {
       return false;
     }
     std::string db_size = node["db_size"].as<std::string>();
+    pc.create_if_missing_ = node["create_if_missing"].as<bool>();
     pc.db_size_ = ycsbc::convert_to_base(db_size);
+    pc.engine_type_ = node["engine_type"].as<std::string>();
     return true;
   }
 };
@@ -150,25 +158,23 @@ class Config_Reader {
     for (auto it = lineup.begin(); it != lineup.end(); it++) {
       std::string dc_name = it->first.as<std::string>();
       if (dc_name == "leveldb" || dc_name == "rocksdb") {
-        std::shared_ptr<db_config> dc = std::make_shared<db_config>();
-        *dc.get() = it->second.as<db_config>();
-        this->db_config_lists.insert(std::pair<std::string, db_config*>(dc_name, dc.get()));
+        auto dc = std::make_shared<db_config>(it->second.as<db_config>());
+        this->db_config_lists.insert(std::pair<std::string, std::shared_ptr<db_config>>(dc_name, dc));
       }else if (dc_name == "pmemkv"){
-        std::shared_ptr<pmemkv_config> pc = std::make_shared<pmemkv_config>();
-        *pc.get() = it->second.as<pmemkv_config>();
-        this->db_config_lists.insert(std::pair<std::string, pmemkv_config *>(dc_name, pc.get()));
+        auto pc = std::make_shared<pmemkv_config>(it->second.as<pmemkv_config>());
+        this->db_config_lists.insert(std::pair<std::string, std::shared_ptr<pmemkv_config>>(dc_name, pc));
       }
     }
     return true;
   }
-  config_templates* get_config(const std::string& db_name)
+  std::shared_ptr<config_templates> get_config(const std::string& db_name)
   {
     auto it = this->db_config_lists.find(db_name);
     return it->second;
   }
 
   private:
-  std::map<std::string, config_templates*> db_config_lists;
+  std::map<std::string, std::shared_ptr<config_templates>> db_config_lists;
 };
 
 } //ycsbc

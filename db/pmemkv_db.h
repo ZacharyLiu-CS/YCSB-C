@@ -1,29 +1,28 @@
 //
-//  leveldb_db.h
+//  pmemkv_db.h
 //  YCSB-C
 //
-//  Created by zhenliu on 05/02/2021.
-//  Copyright (c) 2021 zhenliu <liuzhenm@mail.ustc.edu.cn>.
+//  Created by zhenliu on 15/06/2022.
+//  Copyright (c) 2022 zhenliu <liuzhenm@mail.ustc.edu.cn>.
 //
 
-#ifndef YCSB_C_LEVELDB_DB_H
-#define YCSB_C_LEVELDB_DB_H
+#ifndef YCSB_C_PMEMKV_DB_H
+#define YCSB_C_PMEMKV_DB_H
 
 #include <cstdint>
 #include <string>
 #include <vector>
 #include <atomic>
+#include <libpmemkv.hpp>
 
 #include "core/config_reader.h"
 #include "core/db.h"
-#include "leveldb/db.h"
-#include "leveldb/options.h"
 
 namespace ycsbc {
 
-class LevelDB : public DB {
+class PmemKV : public DB {
   public:
-  LevelDB(const char* dbfilename);
+  PmemKV(const char* dbfilename);
   Status Read(const std::string& table, const std::string& key,
       const std::vector<std::string>* fields,
       std::vector<KVPair>& result);
@@ -44,15 +43,15 @@ class LevelDB : public DB {
 
   void printStats();
 
-  ~LevelDB();
+  ~PmemKV();
 
   private:
-  leveldb::DB* db_;
-  leveldb::Options options;
+  pmem::kv::db * db_;
+  pmem::kv::config cfg_;
   std::atomic<unsigned> no_found_;
 
-}; //end of LevelDB
+}; //end of PmemKV
 
 } //ycsbc
 
-#endif //YCSB_C_LEVELDB_DB_H
+#endif //YCSB_C_PmemKV_DB_H

@@ -82,15 +82,6 @@ TEST(YAMLTest, TestMap){
   ASSERT_STREQ(expectedStr.c_str(), out.c_str());
 }
 
-TEST(YAMLTest, TestReadDBConfig){
-  YAML::Node lineup = YAML::LoadFile("../db_config.yaml");
-  uint64_t expect_val = 10;
-  for (auto it = lineup.begin(); it != lineup.end(); it++){
-    db_config dc = it->second.as<db_config>();
-    ASSERT_EQ(expect_val,dc.bloom_bits_);
-  }
-
-}
 TEST(YAMLTest, TestConvertSize){
   std::string test1 = "100MB";
   uint64_t expect_base = 104857600;
@@ -102,13 +93,13 @@ TEST(YAMLTest, TestConvertSize){
   std::string expect_str = "3GB";
   ASSERT_STREQ(test2.c_str(), expect_str.c_str());
 }
-TEST(Config_ReaderTest, TestInit){
+TEST(Config_ReaderTest, TestReadDBConfig){
   ycsbc::Config_Reader config_reader = ycsbc::Config_Reader("../db_config.yaml");
-  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb"))->memtable_size_, uint64_t(134217728));
-  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb"))->thread_compaction_, uint64_t(8));
-  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb"))->block_cache_size_,uint64_t(8589934592));
-  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb"))->bloom_bits_,uint64_t(10));
-  ASSERT_FALSE(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb"))->enable_direct_io_);
+  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->memtable_size_, uint64_t(134217728));
+  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->thread_compaction_, uint64_t(8));
+  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->block_cache_size_,uint64_t(8589934592));
+  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->bloom_bits_,uint64_t(10));
+  ASSERT_FALSE(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->enable_direct_io_);
 
 }
 int main(int argc, char **argv) {

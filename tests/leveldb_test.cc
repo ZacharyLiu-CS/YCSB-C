@@ -17,8 +17,8 @@
 
 
 TEST(LevelDBTest, TestOperationInsert){
-  ASSERT_EQ(0, mkdir("tmpdb", 0777));
-  auto dbptr = std::make_shared<ycsbc::LevelDB>("tmpdb");
+  ASSERT_EQ(0, mkdir("tmp-leveldb", 0777));
+  auto dbptr = std::make_shared<ycsbc::LevelDB>("tmp-leveldb");
   const std::string table = "leveldb_table";
   const std::string key = "leveldb_key1";
   std::vector<ycsbc::DB::KVPair> write_field;
@@ -30,7 +30,7 @@ TEST(LevelDBTest, TestOperationInsert){
 }
 
 TEST(LevelDBTest, TestOperationRead){
-  auto dbptr = std::make_shared<ycsbc::LevelDB>("tmpdb");
+  auto dbptr = std::make_shared<ycsbc::LevelDB>("tmp-leveldb");
   const std::string table = "leveldb_table";
   const std::string key = "leveldb_key2";
   std::vector<ycsbc::DB::KVPair> write_field;
@@ -46,7 +46,7 @@ TEST(LevelDBTest, TestOperationRead){
 }
 
 TEST(LevelDBTest, TestOperationScan){
-  auto dbptr = std::make_shared<ycsbc::LevelDB>("tmpdb");
+  auto dbptr = std::make_shared<ycsbc::LevelDB>("tmp-leveldb");
   const std::string table = "leveldb_table";
   const std::string key = "leveldb_key3";
   std::vector<ycsbc::DB::KVPair> write_field;
@@ -62,7 +62,7 @@ TEST(LevelDBTest, TestOperationScan){
 }
 
 TEST(LevelDBTest, TestOperationDelete){
-  auto dbptr = std::make_shared<ycsbc::LevelDB>("tmpdb");
+  auto dbptr = std::make_shared<ycsbc::LevelDB>("tmp-leveldb");
   const std::string table = "leveldb_table";
   const std::string key = "leveldb_key1";
 
@@ -70,7 +70,7 @@ TEST(LevelDBTest, TestOperationDelete){
   std::vector<ycsbc::DB::KVPair> result;
   ASSERT_EQ(ycsbc::Status::kOK, dbptr->Delete(table, key));
   ASSERT_EQ(ycsbc::Status::kErrorNoData, dbptr->Read(table, key, &read_field, result));
-  ASSERT_EQ(0, system("rm -r tmpdb"));
+  ASSERT_EQ(0, system("rm -r tmp-leveldb"));
 }
 
 
