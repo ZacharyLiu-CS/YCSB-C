@@ -18,10 +18,9 @@
 #define LOGOUT(msg)                               \
   do {                                            \
     std::cerr << msg << std::endl;                \
-    std::cerr << db_->errormsg() << std::endl;   \
+    std::cerr << db_->errormsg() << std::endl;    \
     exit(0);                                      \
   } while (0)
-
 
 using namespace pmem::kv;
 
@@ -73,10 +72,10 @@ Status PmemKV::Scan(const std::string& table, const std::string& key, int len,
     LOGOUT("Error new read iterator in pmemkv");
   }
   auto& iter = res_iter.get_value();
-  iter.seek_higher_eq(key);
+  iter.seek(key);
   for ( int i = 0; iter.next() == status::OK && i < len; i++ ){
     pmem::kv::result<string_view> res_val = iter.read_range();
-    if ( res_val.is_ok() ){
+    if ( !res_val.is_ok() ){
       LOGOUT("Error read value from iterator of pmemkv");
     }
     // get value from iter

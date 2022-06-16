@@ -17,4 +17,4 @@ rocksdb:
 pmemkv:
   create_if_missing: true
   db_size: "8GB"
-  engine_type: "stree"
+  engine_type: "radix"

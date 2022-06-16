@@ -9,11 +9,12 @@
 #ifndef YCSB_C_PMEMKV_DB_H
 #define YCSB_C_PMEMKV_DB_H
 
-#include <cstdint>
-#include <string>
-#include <vector>
 #include <atomic>
+#include <cstdint>
 #include <libpmemkv.hpp>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "core/config_reader.h"
 #include "core/db.h"
@@ -46,7 +47,7 @@ class PmemKV : public DB {
   ~PmemKV();
 
   private:
-  pmem::kv::db * db_;
+  pmem::kv::db* db_;
   pmem::kv::config cfg_;
   std::atomic<unsigned> no_found_;
 
