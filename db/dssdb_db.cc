@@ -10,6 +10,7 @@
 #include "include/kv_engine.h"
 
 #include <iostream>
+#include <iterator>
 #include <vector>
 
 #define LOGOUT(msg)                   \
