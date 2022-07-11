@@ -6,10 +6,10 @@
 //  Copyright (c) 2014 Jinglei Ren <jinglei@ren.systems>.
 //
 
-#include "db/db_factory.h"
+#include "db_factory.h"
 #include "basic_db.h"
+#include "dssdb_db.h"
 #include "lock_stl_db.h"
-#include "pmemkv_db.h"
 #include <memory>
 
 namespace ycsbc {
@@ -18,10 +18,8 @@ namespace ycsbc {
       return std::make_shared<BasicDB>();
     } else if (props["dbname"] == "lock_stl") {
       return std::make_shared<LockStlDB>();
-    } else if (props["dbname"] == "leveldb") {
-      return std::make_shared<LevelDB>(props["dbpath"].c_str());
-    } else if (props["dbname"] == "pmemkv") {
-      return std::make_shared<PmemKV>(props["dbpath"].c_str());
+   } else if (props["dbname"] == "dssdb") {
+     return std::make_shared<DssDB>(props["host"], props["port"]);
     } else return NULL;
   }
 

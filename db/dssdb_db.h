@@ -1,29 +1,28 @@
 //
-//  pmemkv_db.h
+//  dssdb_db.h
 //  YCSB-C
 //
-//  Created by zhenliu on 15/06/2022.
+//  Created by zhenliu on 07/11/2022.
 //  Copyright (c) 2022 zhenliu <liuzhenm@mail.ustc.edu.cn>.
 //
 
-#ifndef YCSB_C_PMEMKV_DB_H
-#define YCSB_C_PMEMKV_DB_H
+#ifndef YCSB_C_DSSDB_DB_H
+#define YCSB_C_DSSDB_DB_H
 
-#include <atomic>
 #include <cstdint>
-#include <libpmemkv.hpp>
 #include <string>
-#include <string_view>
 #include <vector>
+#include <atomic>
 
 #include "core/config_reader.h"
 #include "core/db.h"
+#include "include/kv_engine.h"
 
 namespace ycsbc {
 
-class PmemKV : public DB {
+class DssDB : public DB {
   public:
-  PmemKV(const char* dbfilename);
+  DssDB(const std::string &host, const std::string & port);
   Status Read(const std::string& table, const std::string& key,
       const std::vector<std::string>* fields,
       std::vector<KVPair>& result);
@@ -42,17 +41,15 @@ class PmemKV : public DB {
 
   void close();
 
-  void printStats();
 
-  ~PmemKV();
+  ~DssDB();
 
   private:
-  pmem::kv::db* db_;
-  pmem::kv::config cfg_;
+  kv::LocalEngine *kv_impl_;
   std::atomic<unsigned> no_found_;
 
-}; //end of PmemKV
+}; //end of DssDB
 
 } //ycsbc
 
-#endif //YCSB_C_PmemKV_DB_H
+#endif //YCSB_C_LEVELDB_DB_H

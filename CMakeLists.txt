@@ -5,32 +5,32 @@ cmake_minimum_required(VERSION 3.10)
 project(ycsbc)
 
 #3. specify c++ compiler version
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -pthread")
+set(CMAKE_CXX_STANDARD 17)
+set(RDMA_LIB "-lrdmacm -libverbs -libumad -lpci")
+set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-pthread -ldl -lrt ${RDMA_LIB} -${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fopenmp")
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBPMEMKV REQUIRED libpmemkv)
 
-option(ENGINE_TREE3 "enable experimental tree3 engine" ON)
-
+# export compile commands
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 #4. head file path
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/db
   ${PROJECT_SOURCE_DIR}/core
+  ${PROJECT_SOURCE_DIR}/db_impl/codebase
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/include
   ${PROJECT_SOURCE_DIR}/third_party/googletest/googletest/include
-  ${PROJECT_SOURCE_DIR}/db_impl/leveldb/include
   ${LIBPMEMKV_INCLUDE_DIRS}
   )
 
 #5. third path link path
 link_directories(
+  ${PROJECT_SOURCE_DIR}/db_impl/codebase/build/source/
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/build/
   ${PROJECT_SOURCE_DIR}/third_party/googletest/build/lib/
-  ${PROJECT_SOURCE_DIR}/db_impl/leveldb/build/
-  ${LIBPMEMKV_LIBRARY_DIRS}
   )
 
 #6. source code file path
@@ -46,16 +46,13 @@ file(GLOB SOURCE_FILE
 add_executable(${PROJECT_NAME} ${MAIN_FILE} ${SOURCE_FILE})
 target_link_libraries(${PROJECT_NAME}
   pthread
-  leveldb
-  pmemkv
+  polarkv
+  rdmacm
+  ibverbs
+  ibumad
+  pci
   yaml-cpp
   gtest
-  snappy
-  zstd
-  lz4
-  bz2
-  z
-  dl
   )
 
 #8. define gtest path
@@ -73,21 +70,16 @@ if (GTEST_FOUND)
     string(REPLACE ".cc" "" testname ${testsourcefilewithoutpath})
     add_executable( ${testname} ${testsourcefile} ${SOURCE_FILE})
     target_link_libraries(${testname}
+      pthread
+      polarkv
+      rdmacm
+      ibverbs
+      ibumad
+      pci
       yaml-cpp
       gtest
-      leveldb
-      pmemkv
-      pthread
-      snappy
       )
     add_test(NAME ${testname} COMMAND ${testname})
   ENDFOREACH(testsourcefile ${TEST_FILE})
 endif()
-
-#10. generate compile commands
-add_custom_command(TARGET ${PROJECT_NAME}
-  POST_BUILD
-  COMMAND bash -x ${PROJECT_SOURCE_DIR}/gen_compile_commands.sh
-  VERBATIM
-  )
 

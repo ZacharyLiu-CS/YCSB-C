@@ -12,7 +12,6 @@
 #include "core/db.h"
 #include "core/properties.h"
 #include "db/basic_db.h"
-#include "db/leveldb_db.h"
 #include <string>
 #include <memory>
 namespace ycsbc {
