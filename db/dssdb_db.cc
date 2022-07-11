@@ -62,6 +62,8 @@ Status DssDB::Insert(const std::string& table, const std::string& key,
 {
   std::string value;
   SerializeRow(values, value);
+  if(key.length()!=16)
+    std::cerr << "YCSB Error: Key length not 16!" <<std::endl;
 
   auto s = kv_impl_->write(key, value);
   if (!s) {
