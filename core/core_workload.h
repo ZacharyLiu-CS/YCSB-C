@@ -215,7 +215,7 @@ inline std::string CoreWorkload::BuildKeyName(uint64_t key_num) {
   std::string key_num_str = std::to_string(key_num);
   int zeros = zero_padding_ - key_num_str.length();
   zeros = std::max(0, zeros);
-  return std::string("user").append(zeros, '0').append(key_num_str).substr(0, 16);
+  return std::string("user").append(zeros, '0').append(key_num_str).substr(8, 16);
 }
 
 inline std::string CoreWorkload::NextFieldName() {
