@@ -8,8 +8,8 @@
 
 
 
-recordcount=100000
-operationcount=100000
+recordcount=192000000
+operationcount=1024000000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
@@ -17,8 +17,8 @@ readallfields=true
 fieldlength=128
 fieldcount=1
 
-readproportion=0.5
-updateproportion=0.5
+readproportion=0.875
+updateproportion=0.125
 scanproportion=0
 insertproportion=0
 

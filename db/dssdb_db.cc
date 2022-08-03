@@ -15,7 +15,7 @@
 
 #define LOGOUT(msg)                   \
   do{                                 \
-    std::cerr << msg << std::endl;    \
+    std::cout << msg << std::endl;    \
     exit(0);                          \
   } while (0)
 
@@ -42,11 +42,7 @@ Status DssDB::Read(const std::string& table, const std::string& key,
     no_found_++;
     return Status::kErrorNoData;
   }
-  if (fields != nullptr) {
-    DeserializeRowFilter(result, value, *fields);
-  } else {
-    DeserializeRow(result, value);
-  }
+
   return Status::kOK;
 }
 
@@ -54,15 +50,14 @@ Status DssDB::Scan(const std::string& table, const std::string& key, int len,
                   const std::vector<std::string>* fields,
                   std::vector<std::vector<KVPair>>& result)
 {
+    //do not support scan operation
     return Status::kOK;
 }
 
 Status DssDB::Insert(const std::string& table, const std::string& key,
                        std::vector<KVPair>& values)
 {
-  std::string value;
-  SerializeRow(values, value);
-
+  std::string value = values[0].second;
   auto s = kv_impl_->write(key, value);
   if (!s) {
     LOGOUT("Write Error!");
@@ -80,29 +75,11 @@ Status DssDB::Update(const std::string& table, const std::string& key,
     no_found_++;
     return Status::kErrorNoData;
   }
-  // then update the specific field
-  std::vector<KVPair> current_values;
-  DeserializeRow(current_values, value);
-  for (auto& new_field : values) {
-    bool found = false;
-    for (auto& current_field : current_values) {
-      if (current_field.first == new_field.first) {
-        found = true;
-        current_field.second = new_field.second;
-        break;
-      }
-    }
-    if (found == false) {
-      break;
-    }
-  }
 
   value.clear();
-  SerializeRow(current_values, value);
+  value = values[0].second;
   s = kv_impl_->write(key, value);
-  if (!s) {
-    LOGOUT("Update Error!");
-  }
+ 
   return Status::kOK;
 }
 
