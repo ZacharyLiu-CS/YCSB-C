@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 #include "db.h"
 #include "properties.h"
 #include "generator.h"
