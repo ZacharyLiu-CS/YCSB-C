@@ -15,6 +15,7 @@
 #include <iostream>
 #include <vector>
 #include <future>
+#include <gperftools/profiler.h>
 #include "core/utils.h"
 #include "core/timer.h"
 #include "core/client.h"
@@ -60,6 +61,8 @@ int main(const int argc, const char *argv[]) {
 
   ycsbc::CoreWorkload wl;
   wl.Init(props);
+  // start to record
+  ProfilerStart("load_ycsbc_phase.prof");
 
   const int num_threads = stoi(props.GetProperty("threadcount", "1"));
 
@@ -99,10 +102,15 @@ int main(const int argc, const char *argv[]) {
     cerr << "# Skipped load records!" << endl;
   }
 
+  // end of the profiler
+  ProfilerStop();
   // Peforms transactions
   actual_ops.clear();
   histogram_list.clear();
   total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
+
+  // start to record
+  ProfilerStart("run_ycsbc_phase.prof");
   timer.Start();
   for (int i = 0; i < num_threads; ++i) {
     auto histogram_tmp = make_shared<utils::Histogram>(utils::RecordUnit::h_microseconds);
@@ -127,6 +135,9 @@ int main(const int argc, const char *argv[]) {
   cerr << props["dbname"] << '\t' << file_name << '\t' << num_threads << '\t';
   cerr << total_ops / (duration / histogram.GetRecordUnit()) << " OPS" << endl;
   cerr << histogram.ToString() << endl;
+
+  // end of the profiler
+  ProfilerStop();
 }
 
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {

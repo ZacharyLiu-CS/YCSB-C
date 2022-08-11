@@ -35,7 +35,6 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/db_impl/codebase
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/include
   ${PROJECT_SOURCE_DIR}/third_party/googletest/googletest/include
-  ${LIBPMEMKV_INCLUDE_DIRS}
   )
 
 #5. third path link path
@@ -64,6 +63,7 @@ target_link_libraries(${PROJECT_NAME}
   ibumad
   pci
   yaml-cpp
+  profiler
   gtest
   )
 

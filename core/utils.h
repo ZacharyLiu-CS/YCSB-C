@@ -18,6 +18,8 @@ namespace utils {
 
 const uint64_t kFNVOffsetBasis64 = 0xCBF29CE484222325;
 const uint64_t kFNVPrime64 = 1099511628211;
+static thread_local std::mt19937 gen((unsigned int)time(NULL));
+static thread_local std::uniform_int_distribution<int> randomchar(0, 94);
 
 inline uint64_t FNVHash64(uint64_t val) {
   uint64_t hash = kFNVOffsetBasis64;
@@ -44,7 +46,7 @@ inline double RandomDouble(double min = 0.0, double max = 1.0) {
 /// Returns an ASCII code that can be printed to desplay
 ///
 inline char RandomPrintChar() {
-  return rand() % 94 + 33;
+  return randomchar(gen) + 33;
 }
 
 class Exception : public std::exception {
