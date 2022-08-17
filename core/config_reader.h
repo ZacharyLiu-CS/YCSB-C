@@ -11,9 +11,9 @@
 
 #include "yaml-cpp/node/parse.h"
 #include "yaml-cpp/yaml.h"
+#include <iostream>
 #include <map>
 #include <memory>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <yaml-cpp/node/node.h>
@@ -70,38 +70,16 @@ struct pmemkv_config : public config_templates {
   uint64_t db_size_;
   std::string engine_type_;
 };
+
+// config for fastfair
+struct fastfair_config : public config_templates {
+  uint64_t db_size_;
+};
 // other ...
 
 } // namespace ycsbc
 
 namespace YAML {
-// encode and decode for pmemkv_config
-template <>
-struct convert<ycsbc::pmemkv_config> {
-  static YAML::Node encode(const ycsbc::pmemkv_config& pc)
-  {
-    Node node;
-    std::string db_size;
-    ycsbc::convert_to_string(db_size, pc.db_size_);
-    // push back all config
-    node.push_back(pc.create_if_missing_);
-    node.push_back(db_size);
-    node.push_back(pc.engine_type_);
-    return node;
-  }
-
-  static bool decode(const Node& node, ycsbc::pmemkv_config& pc)
-  {
-    if (!node.IsMap()) {
-      return false;
-    }
-    std::string db_size = node["db_size"].as<std::string>();
-    pc.create_if_missing_ = node["create_if_missing"].as<bool>();
-    pc.db_size_ = ycsbc::convert_to_base(db_size);
-    pc.engine_type_ = node["engine_type"].as<std::string>();
-    return true;
-  }
-};
 // encode and decode for db_config
 template <>
 struct convert<ycsbc::db_config> {
@@ -142,6 +120,57 @@ struct convert<ycsbc::db_config> {
     return true;
   }
 };
+// encode and decode for pmemkv_config
+template <>
+struct convert<ycsbc::pmemkv_config> {
+  static YAML::Node encode(const ycsbc::pmemkv_config& pc)
+  {
+    Node node;
+    std::string db_size;
+    ycsbc::convert_to_string(db_size, pc.db_size_);
+    // push back all config
+    node.push_back(pc.create_if_missing_);
+    node.push_back(db_size);
+    node.push_back(pc.engine_type_);
+    return node;
+  }
+
+  static bool decode(const Node& node, ycsbc::pmemkv_config& pc)
+  {
+    if (!node.IsMap()) {
+      return false;
+    }
+    std::string db_size = node["db_size"].as<std::string>();
+    pc.create_if_missing_ = node["create_if_missing"].as<bool>();
+    pc.db_size_ = ycsbc::convert_to_base(db_size);
+    pc.engine_type_ = node["engine_type"].as<std::string>();
+    return true;
+  }
+};
+// encode and decode for fastfair_config
+template <>
+struct convert<ycsbc::fastfair_config> {
+  static YAML::Node encode(const ycsbc::fastfair_config& fc)
+  {
+    Node node;
+    std::string db_size;
+    ycsbc::convert_to_string(db_size, fc.db_size_);
+    // push back all config
+    node.push_back(db_size);
+    return node;
+  }
+
+  static bool decode(const Node& node, ycsbc::fastfair_config& fc)
+  {
+    if (!node.IsMap()) {
+      return false;
+    }
+    std::string db_size = node["db_size"].as<std::string>();
+    fc.db_size_ = ycsbc::convert_to_base(db_size);
+    return true;
+  }
+};
+
 }
 
 namespace ycsbc {
@@ -159,10 +188,19 @@ class Config_Reader {
       std::string dc_name = it->first.as<std::string>();
       if (dc_name == "leveldb" || dc_name == "rocksdb") {
         auto dc = std::make_shared<db_config>(it->second.as<db_config>());
-        this->db_config_lists.insert(std::pair<std::string, std::shared_ptr<db_config>>(dc_name, dc));
-      }else if (dc_name == "pmemkv"){
+        this->db_config_lists.insert(
+            std::pair<std::string, std::shared_ptr<db_config>>(dc_name, dc)
+            );
+      } else if (dc_name == "pmemkv") {
         auto pc = std::make_shared<pmemkv_config>(it->second.as<pmemkv_config>());
-        this->db_config_lists.insert(std::pair<std::string, std::shared_ptr<pmemkv_config>>(dc_name, pc));
+        this->db_config_lists.insert(
+            std::pair<std::string, std::shared_ptr<pmemkv_config>>(dc_name, pc)
+            );
+      } else if (dc_name == "fastfair") {
+        auto fc = std::make_shared<fastfair_config>(it->second.as<fastfair_config>());
+        this->db_config_lists.insert(
+            std::pair<std::string, std::shared_ptr<fastfair_config>>(dc_name, fc)
+            );
       }
     }
     return true;

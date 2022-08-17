@@ -6,10 +6,18 @@ project(ycsbc)
 
 #3. specify c++ compiler version
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -pthread")
+set(CMAKE_CXX_FLAGS "-std=c++11 -pthread")
+
+if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    add_compile_definitions(ENABLE_DEBUG)
+else( CMAKE_BUILD_TYPE STREQUAL "Release" )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fopenmp")
+endif( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBPMEMKV REQUIRED libpmemkv)
+pkg_check_modules(LIBPMEMOBJ REQUIRED libpmemobj)
 
 option(ENGINE_TREE3 "enable experimental tree3 engine" ON)
 
@@ -22,7 +30,10 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/include
   ${PROJECT_SOURCE_DIR}/third_party/googletest/googletest/include
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/include
+  ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/include
+  ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/
   ${LIBPMEMKV_INCLUDE_DIRS}
+  ${LIBPMEMOBJ_INCLUDE_DIRS}
   )
 
 #5. third path link path
@@ -30,7 +41,10 @@ link_directories(
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/build/
   ${PROJECT_SOURCE_DIR}/third_party/googletest/build/lib/
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/build/
+  ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/
+  ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/concurrent_pmdk/
   ${LIBPMEMKV_LIBRARY_DIRS}
+  ${LIBPMEMOBJ_LIBRARY_DIRS}
   )
 
 #6. source code file path
@@ -40,16 +54,21 @@ file(GLOB MAIN_FILE
 file(GLOB SOURCE_FILE
   ${PROJECT_SOURCE_DIR}/core/*.cc
   ${PROJECT_SOURCE_DIR}/db/*.cc
+  ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/concurrent_pmdk/src/*.cc
   )
 
 #7. define the executable
 add_executable(${PROJECT_NAME} ${MAIN_FILE} ${SOURCE_FILE})
 target_link_libraries(${PROJECT_NAME}
+  ${LIBPMEMOBJ_LIBRARIES}
+  pmemobj
   pthread
-  leveldb
-  pmemkv
   yaml-cpp
   gtest
+  leveldb
+  rocksdb
+  pmemkv
+  fastfair
   snappy
   zstd
   lz4
@@ -73,12 +92,19 @@ if (GTEST_FOUND)
     string(REPLACE ".cc" "" testname ${testsourcefilewithoutpath})
     add_executable( ${testname} ${testsourcefile} ${SOURCE_FILE})
     target_link_libraries(${testname}
+      pthread
+      pmemobj
       yaml-cpp
       gtest
       leveldb
+      rocksdb
       pmemkv
-      pthread
       snappy
+      zstd
+      lz4
+      bz2
+      z
+      dl
       )
     add_test(NAME ${testname} COMMAND ${testname})
   ENDFOREACH(testsourcefile ${TEST_FILE})

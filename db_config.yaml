@@ -16,5 +16,7 @@ rocksdb:
   sst_file_size: "32MB"
 pmemkv:
   create_if_missing: true
-  db_size: "8GB"
+  db_size: "16GB"
   engine_type: "radix"
+fastfair:
+  db_size: "16GB"

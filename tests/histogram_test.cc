@@ -1,10 +1,13 @@
 #include "gtest/gtest.h"
 #include <algorithm>
+#include <bits/stdint-uintn.h>
 #include <chrono>
 #include <iostream>
 #include "core/histogram.h"
 #include "core/timer.h"
 #include "utils.h"
+#include "core/uniform_generator.h"
+
 TEST(HistogramTest, TestAddPerformance){
   utils::Histogram histogram_list;
   utils::Timer<std::chrono::milliseconds> timer;
@@ -193,12 +196,25 @@ TEST(HistogramTest, TestAddPerformance){
 }
 
 TEST(HistogramTest, TestCorrectness){
-  const double value = 1;
-  utils::Histogram histogram_list;
-  for ( int i = 0; i < 10000; i++ )
-    histogram_list.Add_Fast(value);
-  // std::cerr << histogram_list.ToString() << std::endl;
-  ASSERT_EQ(histogram_list.Median(), 1.0);
+  utils::Histogram histogram_list1;
+  utils::Histogram histogram_list2;
+  ycsbc::UniformGenerator gen(1,100000);
+  for ( int i = 0; i < 100000; i++ ){
+    uint64_t value = gen.Next();
+    histogram_list1.Add(value);
+    histogram_list2.Add_Fast(value);
+  }
+  // std::cout << "histogram_list1" << std::endl;
+  // std::cout << histogram_list1.ToString() << std::endl;
+
+  // std::cout << "histogram_list2" << std::endl;
+  // std::cout << histogram_list2.ToString() << std::endl;
+
+
+  for ( int i = 0; i< 154; i++ ){
+    ASSERT_EQ(histogram_list1.buckets_[i], histogram_list2.buckets_[i]);
+  }
+  ASSERT_EQ(histogram_list1.Median(), histogram_list2.Median());
 
 }
 int main(int argc, char **argv) {

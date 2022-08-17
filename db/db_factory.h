@@ -13,16 +13,20 @@
 #include "core/properties.h"
 #include "db/basic_db.h"
 #include "db/leveldb_db.h"
-#include <string>
+#include "db/lock_stl_db.h"
+#include "db/pmemkv_db.h"
+#include "db/rocksdb_db.h"
+#include "db/fastfair_db.h"
+
 #include <memory>
+#include <string>
 namespace ycsbc {
 
 class DBFactory {
- public:
-  static std::shared_ptr<DB> CreateDB(utils::Properties &props);
+  public:
+  static std::shared_ptr<DB> CreateDB(utils::Properties& props);
 };
 
 } // ycsbc
 
 #endif // YCSB_C_DB_FACTORY_H_
-

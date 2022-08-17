@@ -212,7 +212,7 @@ inline std::string CoreWorkload::BuildKeyName(uint64_t key_num) {
     key_num = utils::Hash(key_num);
   }
   std::string key_num_str = std::to_string(key_num);
-  int zeros = zero_padding_ - key_num_str.length();
+  int zeros = zero_padding_ - key_num_str.length() - 4;
   zeros = std::max(0, zeros);
   return std::string("user").append(zeros, '0').append(key_num_str);
 }
