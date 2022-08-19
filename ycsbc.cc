@@ -46,7 +46,6 @@ int DelegateClient(shared_ptr<ycsbc::DB> db, ycsbc::CoreWorkload *wl, const int 
     double duration = timer.End();
     histogram->Add_Fast(duration);
   }
-  db->Close();
   return oks;
 }
 
@@ -90,6 +89,7 @@ int main(const int argc, const char *argv[]) {
       sum += n.get();
     }
     double duration = timer.End();
+    db->Close();
     utils::Histogram histogram(utils::RecordUnit::h_microseconds);
     for (auto &h : histogram_list){
         histogram.Merge(*h);
@@ -131,6 +131,7 @@ int main(const int argc, const char *argv[]) {
   }
 
   auto duration = timer.End();
+  db->Close();
   cerr << "# Transaction throughput (KTPS)" << endl;
   cerr << props["dbname"] << '\t' << file_name << '\t' << num_threads << '\t';
   cerr << total_ops / (duration / histogram.GetRecordUnit()) << " OPS" << endl;

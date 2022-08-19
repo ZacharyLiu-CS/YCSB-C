@@ -87,7 +87,8 @@ Status DssDB::Delete(const std::string& table, const std::string& key)
 {
   return Status::kOK;
 }
-void DssDB::close(){
+void DssDB::Close(){
+  std::cout << "No found: " << no_found_  << std::endl; 
   kv_impl_->stop();
 }
 DssDB::~DssDB()

@@ -39,7 +39,7 @@ class DssDB : public DB {
 
   Status Delete(const std::string& table, const std::string& key);
 
-  void close();
+  void Close();
 
 
   ~DssDB();

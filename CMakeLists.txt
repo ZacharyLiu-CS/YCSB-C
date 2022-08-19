@@ -9,21 +9,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(RDMA_LIB "-lrdmacm -libverbs -libumad -lpci")
 set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS "-pthread -ldl -lrt ${RDMA_LIB} -${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -fopenmp")
 
 #3.1 update git submodules
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
-  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    RESULT_VARIABLE GIT_SUBMOD_RESULT)
-  execute_process(COMMAND bash ${PROJECT_SOURCE_DIR}/db_impl/build_db_impl.sh)
-  execute_process(COMMAND bash ${PROJECT_SOURCE_DIR}/third_party/build_third_party.sh)
-  if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-    message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-  endif()
-endif()
-
 # export compile commands
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
