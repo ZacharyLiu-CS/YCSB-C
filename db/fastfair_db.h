@@ -11,20 +11,20 @@
 
 #include <atomic>
 #include <cstdint>
-#include <string>
-#include <vector>
 #include <iostream>
-#include <unistd.h>
-#include <sys/types.h>
+#include <string>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
 
 #include "concurrent_pmdk/src/btree.h"
 #include "core/config_reader.h"
 #include "core/db.h"
 
-
 namespace ycsbc {
 
+using namespace fastfair;
 class FastFair : public DB {
   public:
   FastFair(const char* dbfilename);

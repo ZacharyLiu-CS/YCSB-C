@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.10)
 project(ycsbc)
 
 #3. specify c++ compiler version
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "-std=c++11 -pthread")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "-std=c++17 -pthread")
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -32,6 +32,9 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/include
   ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/include
   ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/
+  ${PROJECT_SOURCE_DIR}/db_impl/listdb/
+  ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/
+  ${PROJECT_SOURCE_DIR}/db_impl/utree
   ${LIBPMEMKV_INCLUDE_DIRS}
   ${LIBPMEMOBJ_INCLUDE_DIRS}
   )
@@ -43,6 +46,8 @@ link_directories(
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/build/
   ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/
   ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/concurrent_pmdk/
+  ${PROJECT_SOURCE_DIR}/db_impl/listdb/build
+  ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/build
   ${LIBPMEMKV_LIBRARY_DIRS}
   ${LIBPMEMOBJ_LIBRARY_DIRS}
   )
@@ -54,7 +59,6 @@ file(GLOB MAIN_FILE
 file(GLOB SOURCE_FILE
   ${PROJECT_SOURCE_DIR}/core/*.cc
   ${PROJECT_SOURCE_DIR}/db/*.cc
-  ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/concurrent_pmdk/src/*.cc
   )
 
 #7. define the executable
@@ -62,6 +66,7 @@ add_executable(${PROJECT_NAME} ${MAIN_FILE} ${SOURCE_FILE})
 target_link_libraries(${PROJECT_NAME}
   ${LIBPMEMOBJ_LIBRARIES}
   pmemobj
+  pmem
   pthread
   yaml-cpp
   gtest
@@ -69,6 +74,8 @@ target_link_libraries(${PROJECT_NAME}
   rocksdb
   pmemkv
   fastfair
+  listdb
+  neopmkv
   snappy
   zstd
   lz4
@@ -94,11 +101,15 @@ if (GTEST_FOUND)
     target_link_libraries(${testname}
       pthread
       pmemobj
+      pmem
       yaml-cpp
       gtest
       leveldb
       rocksdb
       pmemkv
+      fastfair
+      listdb
+      neopmkv
       snappy
       zstd
       lz4

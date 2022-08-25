@@ -20,3 +20,7 @@ pmemkv:
   engine_type: "radix"
 fastfair:
   db_size: "16GB"
+listdb:
+  pool_size: "64MB"
+utree:
+  db_size: "16GB"
