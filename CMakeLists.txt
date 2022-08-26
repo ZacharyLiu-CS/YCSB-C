@@ -9,15 +9,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-std=c++17 -pthread")
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-    add_compile_definitions(ENABLE_DEBUG)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+  add_compile_definitions(ENABLE_DEBUG)
 else( CMAKE_BUILD_TYPE STREQUAL "Release" )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fopenmp")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fopenmp")
 endif( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 
 find_package(PkgConfig REQUIRED)
+find_package(fmt REQUIRED)
 pkg_check_modules(LIBPMEMKV REQUIRED libpmemkv)
 pkg_check_modules(LIBPMEMOBJ REQUIRED libpmemobj)
+pkg_check_modules(LIBPMEM REQUIRED libpmem)
+
 
 option(ENGINE_TREE3 "enable experimental tree3 engine" ON)
 
@@ -33,7 +36,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/include
   ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/
   ${PROJECT_SOURCE_DIR}/db_impl/listdb/
-  ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/
+  ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/include
   ${PROJECT_SOURCE_DIR}/db_impl/utree
   ${LIBPMEMKV_INCLUDE_DIRS}
   ${LIBPMEMOBJ_INCLUDE_DIRS}
@@ -48,8 +51,10 @@ link_directories(
   ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/concurrent_pmdk/
   ${PROJECT_SOURCE_DIR}/db_impl/listdb/build
   ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/build
+  ${PROJECT_SOURCE_DIR}/db_impl/utree
   ${LIBPMEMKV_LIBRARY_DIRS}
   ${LIBPMEMOBJ_LIBRARY_DIRS}
+  ${LIBPMEM_LIBRARY_DIRS}
   )
 
 #6. source code file path
@@ -74,6 +79,7 @@ target_link_libraries(${PROJECT_NAME}
   rocksdb
   pmemkv
   fastfair
+  utree
   listdb
   neopmkv
   snappy
@@ -82,6 +88,7 @@ target_link_libraries(${PROJECT_NAME}
   bz2
   z
   dl
+  fmt::fmt
   )
 
 #8. define gtest path
@@ -99,15 +106,17 @@ if (GTEST_FOUND)
     string(REPLACE ".cc" "" testname ${testsourcefilewithoutpath})
     add_executable( ${testname} ${testsourcefile} ${SOURCE_FILE})
     target_link_libraries(${testname}
-      pthread
+      ${LIBPMEMOBJ_LIBRARIES}
       pmemobj
       pmem
+      pthread
       yaml-cpp
       gtest
       leveldb
       rocksdb
       pmemkv
       fastfair
+      utree
       listdb
       neopmkv
       snappy
@@ -116,6 +125,7 @@ if (GTEST_FOUND)
       bz2
       z
       dl
+      fmt::fmt
       )
     add_test(NAME ${testname} COMMAND ${testname})
   ENDFOREACH(testsourcefile ${TEST_FILE})

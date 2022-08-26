@@ -32,6 +32,8 @@ PmemKV::PmemKV(const char* dbfilename)
   Config_Reader config_reader = Config_Reader();
   pmemkv_config* pc = static_cast<pmemkv_config*>(config_reader.get_config("pmemkv").get());
 
+  std::string mkdir_cmd = std::string("mkdir -p ") + std::string(dbfilename);
+  int res = system(mkdir_cmd.c_str());
   std::string file_path(dbfilename);
   file_path = file_path + "/" + pc->engine_type_;
   // assign the option to cfg

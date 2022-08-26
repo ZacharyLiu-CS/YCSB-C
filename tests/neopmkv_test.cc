@@ -17,27 +17,41 @@
 #include <string>
 #include <utility>
 
+#include "neopmkv.h"
 
-const uint64_t POOL_SIZE = 64UL * 1024UL * 1024UL;
-const std::string db_path = "/mnt/pmem0/tmp-listdb";
-const std::string clean_cmd = "rm -r /mnt/pmem0/tmp-listdb";
-const std::string mkdir_cmd = "mkdir -p /mnt/pmem0/tmp-listdb";
+
+
+const std::string mkdir_cmd = "mkdir -p /mnt/pmem0/tmp-neopmkv";
+const std::string clean_cmd = "rm -r /mnt/pmem0/tmp-neopmkv";
 
 #define LOG(msg)                   \
   do {                             \
     std::cout << msg << std::endl; \
   } while (0)
 
-TEST(ListDBTest, TestBasicOperation)
+TEST(NEOPMKVTest, TestBasicOperation)
 {
 
   ASSERT_EQ(0, system(mkdir_cmd.c_str()));
 
+  NKV::NeoPMKV * neopmkv = new NKV::NeoPMKV();
+  NKV::EntryKey key1 = 1;
+  std::string value1 = "11";
+  NKV::EntryKey key2 = 2;
+  std::string value2 = "22";
+  neopmkv->put(key1, value1);
+  neopmkv->put(key2, value2);
 
+  std::string read_value;
+  neopmkv->get(key1, read_value);
+  ASSERT_EQ(read_value, value1);
+  neopmkv->get(key2, read_value);
+  ASSERT_EQ(read_value, value2);
+
+  delete neopmkv;
 
 }
-
-TEST(ListDBTest, TestOperationDelete)
+TEST(NEOPMKVTest, TestOperationDelete)
 {
   ASSERT_EQ(0, system(clean_cmd.c_str()));
 }

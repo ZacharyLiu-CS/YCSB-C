@@ -9,8 +9,7 @@
 #include "db/db_factory.h"
 
 namespace ycsbc {
-std::shared_ptr<DB> DBFactory::CreateDB(utils::Properties& props)
-{
+std::shared_ptr<DB> DBFactory::CreateDB(utils::Properties &props) {
   if (props["dbname"] == "basic") {
     return std::make_shared<BasicDB>();
   } else if (props["dbname"] == "lock_stl") {
@@ -23,8 +22,13 @@ std::shared_ptr<DB> DBFactory::CreateDB(utils::Properties& props)
     return std::make_shared<PmemKV>(props["dbpath"].c_str());
   } else if (props["dbname"] == "fastfair") {
     return std::make_shared<FastFair>(props["dbpath"].c_str());
+  } else if (props["dbname"] == "neopmkv") {
+    return std::make_shared<NEOPMKV>(props["dbpath"].c_str());
+  } else if (props["dbname"] == "utree") {
+    return std::make_shared<UTree>(props["dbpath"].c_str());
   } else
+
     return NULL;
 }
 
-}
+} // namespace ycsbc

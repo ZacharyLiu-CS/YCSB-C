@@ -26,8 +26,7 @@ const std::string db_path = "/mnt/pmem0/tmp-listdb";
 const std::string clean_cmd = "rm -r /mnt/pmem0/tmp-listdb";
 const std::string mkdir_cmd = "mkdir -p /mnt/pmem0/tmp-listdb";
 
-#define LISTDB_STRING_KEY
-#define LISTDB_WISCKEY
+
 
 #define LOG(msg)                   \
   do {                             \
@@ -67,6 +66,8 @@ TEST(ListDBTest, TestBasicOperation)
   p2 += sizeof(size_t);
   value.assign(p2, val_len2);
   ASSERT_EQ(value, value2);
+  delete client;
+  delete db;
 
 
 }
