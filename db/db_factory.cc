@@ -26,7 +26,10 @@ std::shared_ptr<DB> DBFactory::CreateDB(utils::Properties &props) {
     return std::make_shared<NEOPMKV>(props["dbpath"].c_str());
   } else if (props["dbname"] == "utree") {
     return std::make_shared<UTree>(props["dbpath"].c_str());
+  } else if (props["dbname"] == "listdb") {
+    return std::make_shared<LISTDB>(props["dbpath"].c_str());
   } else
+
 
     return NULL;
 }

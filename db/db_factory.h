@@ -19,6 +19,7 @@
 #include "db/fastfair_db.h"
 #include "db/neopmkv_db.h"
 #include "db/utree_db.h"
+#include "db/listdb_db.h"
 
 #include <memory>
 #include <string>

@@ -21,7 +21,7 @@ pkg_check_modules(LIBPMEMKV REQUIRED libpmemkv)
 pkg_check_modules(LIBPMEMOBJ REQUIRED libpmemobj)
 pkg_check_modules(LIBPMEM REQUIRED libpmem)
 
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(ENGINE_TREE3 "enable experimental tree3 engine" ON)
 
 
@@ -131,10 +131,5 @@ if (GTEST_FOUND)
   ENDFOREACH(testsourcefile ${TEST_FILE})
 endif()
 
-#10. generate compile commands
-add_custom_command(TARGET ${PROJECT_NAME}
-  POST_BUILD
-  COMMAND bash -x ${PROJECT_SOURCE_DIR}/gen_compile_commands.sh
-  VERBATIM
-  )
+
 
