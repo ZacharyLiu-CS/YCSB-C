@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "core/db.h"
+#include "core/config_reader.h"
 #include "neopmkv.h"
 
 namespace ycsbc {

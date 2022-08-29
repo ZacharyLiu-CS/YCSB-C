@@ -18,6 +18,7 @@
 
 #include "core/db.h"
 #include "utree.h"
+#include "core/config_reader.h"
 
 namespace ycsbc {
 

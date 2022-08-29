@@ -26,7 +26,10 @@ UTree::UTree(const char* dbfilename)
     mkdir(dbfilename, 0700);
   }
 
-  bt_ = new btree(dbfilename, 16ULL << 30);
+  ConfigReader config_reader = ConfigReader();
+  utree_config* uc = static_cast<utree_config*>(config_reader.get_config("utree").get());
+
+  bt_ = new btree(dbfilename, uc->db_size_);
 
 }
 

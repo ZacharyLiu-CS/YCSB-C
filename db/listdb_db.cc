@@ -16,15 +16,15 @@
 
 namespace ycsbc {
 
-const uint64_t POOL_SIZE = 128UL * 1024UL * 1024UL;
 
 LISTDB::LISTDB(const char *dbfilename) : no_found_(0) {
   if (file_exists(dbfilename)) {
     mkdir(dbfilename, 0700);
   }
-
+  ConfigReader config_reader = ConfigReader();
+  listdb_config* lc = static_cast<listdb_config*>(config_reader.get_config("listdb").get());
   db_ = new ListDB();
-  db_->Init(dbfilename, POOL_SIZE);
+  db_->Init(dbfilename, lc->pool_size_);
   client_ = new DBClient(db_, 0, 0);
 }
 

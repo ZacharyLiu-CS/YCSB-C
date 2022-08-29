@@ -28,7 +28,7 @@ namespace ycsbc {
 LevelDB::LevelDB(const char* dbfilename)
     : no_found_(0)
 {
-  Config_Reader config_reader = Config_Reader();
+  ConfigReader config_reader = ConfigReader();
   db_config* dc = static_cast<db_config*>(config_reader.get_config("leveldb").get());
 
   //create database if not exists

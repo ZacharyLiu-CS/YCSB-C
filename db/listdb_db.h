@@ -17,9 +17,11 @@
 #include <string>
 #include <utility>
 
+
+#include "core/db.h"
+#include "core/config_reader.h"
 #include "listdb/db_client.h"
 #include "listdb/listdb.h"
-#include "core/db.h"
 
 namespace ycsbc {
 

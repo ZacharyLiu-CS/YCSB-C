@@ -24,3 +24,6 @@ listdb:
   pool_size: "64MB"
 utree:
   db_size: "16GB"
+neopmkv:
+  db_size: "16GB"
+  chunk_size: "64MB"

@@ -77,10 +77,32 @@ struct fastfair_config : public config_templates {
 };
 // other ...
 
+struct listdb_config : public config_templates {
+  uint64_t pool_size_;
+};
+
+struct utree_config : public config_templates {
+  uint64_t db_size_;
+};
+
+struct neopmkv_config : public config_templates {
+  uint64_t chunk_size_;
+  uint64_t db_size_;
+};
+
 } // namespace ycsbc
 
 namespace YAML {
 // encode and decode for db_config
+// struct db_config : public config_templates {
+//   uint64_t bloom_bits_;
+//   bool enable_direct_io_;
+//   bool enable_compaction_;
+//   uint64_t thread_compaction_;
+//   uint64_t block_cache_size_;
+//   uint64_t memtable_size_;
+//   uint64_t sst_file_size_;
+// };
 template <>
 struct convert<ycsbc::db_config> {
   static YAML::Node encode(const ycsbc::db_config& dc)
@@ -121,6 +143,9 @@ struct convert<ycsbc::db_config> {
   }
 };
 // encode and decode for pmemkv_config
+// struct fastfair_config : public config_templates {
+//   uint64_t db_size_;
+// };
 template <>
 struct convert<ycsbc::pmemkv_config> {
   static YAML::Node encode(const ycsbc::pmemkv_config& pc)
@@ -171,16 +196,104 @@ struct convert<ycsbc::fastfair_config> {
   }
 };
 
+// struct listdb_config : public config_templates {
+//   uint64_t pool_size_;
+// };
+
+template <>
+struct convert<ycsbc::listdb_config> {
+  static YAML::Node encode(const ycsbc::listdb_config& lc)
+  {
+    Node node;
+    std::string pool_size;
+    ycsbc::convert_to_string(pool_size, lc.pool_size_);
+    // push back all config
+    node.push_back(pool_size);
+    return node;
+  }
+
+  static bool decode(const Node& node, ycsbc::listdb_config& lc)
+  {
+    if (!node.IsMap()) {
+      return false;
+    }
+    std::string pool_size = node["pool_size"].as<std::string>();
+    lc.pool_size_ = ycsbc::convert_to_base(pool_size);
+    return true;
+  }
+};
+
+
+
+// struct utree_config : public config_templates {
+//   uint64_t db_size_;
+// };
+template <>
+struct convert<ycsbc::utree_config> {
+  static YAML::Node encode(const ycsbc::utree_config& uc)
+  {
+    Node node;
+    std::string db_size;
+    ycsbc::convert_to_string(db_size, uc.db_size_);
+    // push back all config
+    node.push_back(db_size);
+    return node;
+  }
+
+  static bool decode(const Node& node, ycsbc::utree_config& uc)
+  {
+    if (!node.IsMap()) {
+      return false;
+    }
+    std::string db_size = node["db_size"].as<std::string>();
+    uc.db_size_ = ycsbc::convert_to_base(db_size);
+    return true;
+  }
+};
+
+// end of encode and decode
+// struct neopmkv_config : public config_templates {
+//   uint64_t chunk_size_;
+//   uint64_t db_size_;
+// };
+template <>
+struct convert<ycsbc::neopmkv_config> {
+  static YAML::Node encode(const ycsbc::neopmkv_config& nc)
+  {
+    Node node;
+    std::string chunk_size;
+    ycsbc::convert_to_string(chunk_size, nc.chunk_size_);
+    node.push_back(chunk_size);
+    std::string db_size;
+    ycsbc::convert_to_string(db_size, nc.db_size_);
+    // push back all config
+    node.push_back(db_size);
+    return node;
+  }
+
+  static bool decode(const Node& node, ycsbc::neopmkv_config& nc)
+  {
+    if (!node.IsMap()) {
+      return false;
+    }
+    std::string chunk_size = node["chunk_size"].as<std::string>();
+    nc.chunk_size_ = ycsbc::convert_to_base(chunk_size);
+    std::string db_size = node["db_size"].as<std::string>();
+    nc.db_size_ = ycsbc::convert_to_base(db_size);
+    return true;
+  }
+};
+
 }
 
 namespace ycsbc {
-class Config_Reader {
+class ConfigReader {
   public:
-  Config_Reader(std::string file_path = "../db_config.yaml")
+  ConfigReader(std::string file_path = "../db_config.yaml")
   {
     this->load_config(file_path);
   }
-  ~Config_Reader() { }
+  ~ConfigReader() { }
   bool load_config(std::string file_path = "../db_config.yaml")
   {
     YAML::Node lineup = YAML::LoadFile(file_path);
@@ -201,7 +314,24 @@ class Config_Reader {
         this->db_config_lists.insert(
             std::pair<std::string, std::shared_ptr<fastfair_config>>(dc_name, fc)
             );
-      }
+      } else if (dc_name == "listdb") {
+        auto lc = std::make_shared<listdb_config>(it->second.as<listdb_config>());
+        this->db_config_lists.insert(
+            std::pair<std::string, std::shared_ptr<listdb_config>>(dc_name, lc)
+            );
+      } else if (dc_name == "utree") {
+        auto uc = std::make_shared<utree_config>(it->second.as<utree_config>());
+        this->db_config_lists.insert(
+            std::pair<std::string, std::shared_ptr<utree_config>>(dc_name, uc)
+            );
+      }  else if (dc_name == "neopmkv") {
+        auto nc = std::make_shared<neopmkv_config>(it->second.as<neopmkv_config>());
+        this->db_config_lists.insert(
+            std::pair<std::string, std::shared_ptr<neopmkv_config>>(dc_name, nc)
+            );
+      } 
+
+
     }
     return true;
   }

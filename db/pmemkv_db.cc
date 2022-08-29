@@ -29,7 +29,7 @@ namespace ycsbc {
 PmemKV::PmemKV(const char* dbfilename)
     : no_found_(0)
 {
-  Config_Reader config_reader = Config_Reader();
+  ConfigReader config_reader = ConfigReader();
   pmemkv_config* pc = static_cast<pmemkv_config*>(config_reader.get_config("pmemkv").get());
 
   std::string mkdir_cmd = std::string("mkdir -p ") + std::string(dbfilename);

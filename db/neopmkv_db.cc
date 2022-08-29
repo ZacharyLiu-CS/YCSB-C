@@ -23,8 +23,11 @@ NEOPMKV::NEOPMKV(const char *dbfilename) : no_found_(0) {
   std::string mkdir_cmd = std::string("mkdir -p ") + std::string(dbfilename);
   res = system(mkdir_cmd.c_str());
 
+  ConfigReader config_reader = ConfigReader();
+  neopmkv_config* nc = static_cast<neopmkv_config*>(config_reader.get_config("neopmkv").get());
+
   if (neopmkv_ == nullptr) {
-    neopmkv_ = new NKV::NeoPMKV(dbfilename, 128ULL << 20, 16ULL << 30);
+    neopmkv_ = new NKV::NeoPMKV(dbfilename, nc->chunk_size_, nc->db_size_);
   }
   if (neopmkv_ == nullptr) {
     LOGOUT("init neopmkv failed!");

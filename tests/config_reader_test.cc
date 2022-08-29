@@ -103,8 +103,8 @@ TEST(YAMLTest, TestConvertSize){
   std::string expect_str = "3GB";
   ASSERT_STREQ(test2.c_str(), expect_str.c_str());
 }
-TEST(Config_ReaderTest, TestReadDBConfig){
-  ycsbc::Config_Reader config_reader = ycsbc::Config_Reader("../db_config.yaml");
+TEST(ConfigReaderTest, TestReadDBConfig){
+  ycsbc::ConfigReader config_reader = ycsbc::ConfigReader("../db_config.yaml");
   ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->memtable_size_, uint64_t(134217728));
   ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->thread_compaction_, uint64_t(8));
   ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->block_cache_size_,uint64_t(8589934592));

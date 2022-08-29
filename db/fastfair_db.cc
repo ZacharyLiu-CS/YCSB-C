@@ -21,7 +21,7 @@ namespace ycsbc {
 FastFair::FastFair(const char* dbfilename)
     : no_found_(0)
 {
-  Config_Reader config_reader = Config_Reader();
+  ConfigReader config_reader = ConfigReader();
   fastfair_config* ffc = static_cast<fastfair_config*>(config_reader.get_config("fastfair").get());
   bt_ = TOID_NULL(btree);
 
