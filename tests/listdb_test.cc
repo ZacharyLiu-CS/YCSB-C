@@ -32,7 +32,16 @@ const std::string mkdir_cmd = "mkdir -p /mnt/pmem0/tmp-listdb";
   do {                             \
     std::cout << msg << std::endl; \
   } while (0)
-
+inline std::string convert_valueptr_to_value(uint64_t& value_ptr) {
+  // std::cerr << "value:ptr" << value_ptr << std::endl;
+  size_t value_len = *((size_t *)value_ptr);
+  // std::cerr << "value:len" << value_len << std::endl;
+  value_ptr += sizeof(size_t);
+  std::string value;
+  value.assign((char*)value_ptr, value_len);
+  // std::cerr << "value:content" << value << std::endl;
+  return value;
+}
 TEST(ListDBTest, TestBasicOperation)
 {
 
@@ -52,19 +61,12 @@ TEST(ListDBTest, TestBasicOperation)
   //read value1
   uint64_t value_ptr;
   ASSERT_EQ(client->GetStringKV(key1, &value_ptr), true);
-  std::string value;
-  char* p = (char*)value_ptr;
-  size_t val_len = *((uint64_t*)p);
-  p += sizeof(size_t);
-  value.assign(p, val_len);
+  std::string value = convert_valueptr_to_value(value_ptr);
   ASSERT_EQ(value, value1);
   
   //read value2
   ASSERT_EQ(client->GetStringKV(key2, &value_ptr), true);
-  char* p2 = (char*)value_ptr;
-  size_t val_len2 = *((uint64_t*)p2);
-  p2 += sizeof(size_t);
-  value.assign(p2, val_len2);
+  value = convert_valueptr_to_value(value_ptr);
   ASSERT_EQ(value, value2);
   delete client;
   delete db;

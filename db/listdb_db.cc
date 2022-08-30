@@ -7,6 +7,7 @@
 //
 
 #include "db/listdb_db.h"
+#include "db.h"
 
 #define LOGOUT(msg)                                                            \
   do {                                                                         \
@@ -16,13 +17,21 @@
 
 namespace ycsbc {
 
+inline std::string convert_valueptr_to_value(uint64_t& value_ptr) {
+  size_t value_len = *((size_t *)value_ptr);
+  value_ptr += sizeof(size_t);
+  std::string value;
+  value.assign((char*)value_ptr, value_len);
+  return value;
+}
 
 LISTDB::LISTDB(const char *dbfilename) : no_found_(0) {
   if (file_exists(dbfilename)) {
     mkdir(dbfilename, 0700);
   }
   ConfigReader config_reader = ConfigReader();
-  listdb_config* lc = static_cast<listdb_config*>(config_reader.get_config("listdb").get());
+  listdb_config *lc =
+      static_cast<listdb_config *>(config_reader.get_config("listdb").get());
   db_ = new ListDB();
   db_->Init(dbfilename, lc->pool_size_);
   client_ = new DBClient(db_, 0, 0);
@@ -32,11 +41,17 @@ Status LISTDB::Read(const std::string &table, const std::string &key,
                     const std::vector<std::string> *fields,
                     std::vector<KVPair> &result) {
 
-  uint64_t value;
-  bool res = client_->GetStringKV(key, &value);
+  uint64_t value_ptr;
+  bool res = client_->GetStringKV(key, &value_ptr);
   if (res == false) {
     no_found_++;
     return Status::kErrorNoData;
+  }
+  std::string value = convert_valueptr_to_value(value_ptr);
+  if (fields != nullptr) {
+    DeserializeRowFilter(result, value, *fields);
+  } else {
+    DeserializeRow(result, value);
   }
   return Status::kOK;
 }
@@ -59,11 +74,35 @@ Status LISTDB::Insert(const std::string &table, const std::string &key,
 Status LISTDB::Update(const std::string &table, const std::string &key,
                       std::vector<KVPair> &values) {
   // first read values from db
-  uint64_t value;
-  bool res = client_->GetStringKV(key, &value);
-  std::string new_value;
-  SerializeRow(values, new_value);
-  client_->PutStringKV(key, new_value);
+  uint64_t value_ptr;
+  bool res = client_->GetStringKV(key, &value_ptr);
+  if (res == false){
+    no_found_++;
+    return Status::kErrorNoData;
+  }
+  std::string value = convert_valueptr_to_value(value_ptr);
+
+  // then update the specific field
+  std::vector<KVPair> current_values;
+  DeserializeRow(current_values, value);
+  for (auto &new_field : values) {
+    bool found = false;
+    for (auto &current_field : current_values) {
+      if (current_field.first == new_field.first) {
+        found = true;
+        current_field.second = new_field.second;
+        break;
+      }
+    }
+    if (found == false) {
+      break;
+    }
+  }
+
+  value.clear();
+  SerializeRow(current_values, value);
+  client_->PutStringKV(key, value);
+
   return Status::kOK;
 }
 
