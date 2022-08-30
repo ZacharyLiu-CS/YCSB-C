@@ -18,7 +18,10 @@
 
 #include "core/db.h"
 #include "utree.h"
+#include "pmem_log.h"
+#include "pmem_engine.h"
 #include "core/config_reader.h"
+
 
 namespace ycsbc {
 
@@ -56,6 +59,8 @@ class UTree : public DB {
   private:
   ::btree *bt_;
   std::atomic<unsigned> no_found_;
+  NKV::PmemEngine * engine_ptr_;
+  NKV::PmemEngineConfig engine_config_;
 
 }; //end of utree
 
