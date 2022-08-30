@@ -6,7 +6,7 @@
 //  Copyright (c) 2021 zhenliu <liuzhenm@mail.ustc.edu.cn>.
 //
 
-#include "rocksdb_db.h"
+#include "pmrocksdb_db.h"
 
 #include <iostream>
 #include <vector>
@@ -21,20 +21,19 @@ using std::cerr;
 using std::cout;
 using std::endl;
 
-#define LOGOUT(msg)                   \
-  do{                                 \
-    std::cerr << msg << std::endl;    \
-    exit(0);                          \
+#define LOGOUT(msg)                                                            \
+  do {                                                                         \
+    std::cerr << msg << std::endl;                                             \
+    exit(0);                                                                   \
   } while (0)
 
 namespace ycsbc {
 
-RocksDB::RocksDB(const char* dbfilename)
-    : no_found_(0)
-{
+PMRocksDB::PMRocksDB(const char *dbfilename) : no_found_(0) {
   ConfigReader config_reader = ConfigReader();
-  db_config* dc = static_cast<db_config*>(config_reader.get_config("rocksdb").get());
-  //create database if not exists
+  db_config *dc =
+      static_cast<db_config *>(config_reader.get_config("pmrocksdb").get());
+  // create database if not exists
   options.create_if_missing = true;
   options.use_direct_reads = dc->enable_direct_io_;
   options.use_direct_io_for_flush_and_compaction = dc->enable_direct_io_;
@@ -43,11 +42,28 @@ RocksDB::RocksDB(const char* dbfilename)
   options.max_background_jobs = dc->thread_compaction_ + 4;
   options.write_buffer_size = dc->memtable_size_;
   options.target_file_size_base = dc->sst_file_size_;
+  options.env = rocksdb::NewDCPMMEnv(rocksdb::DCPMMEnvOptions());
+
+  // setup the pmem configuration
+  std::string pmem_rocksdb_path = dbfilename;
+  // configure for pmem kv sepeartion
+  options.wal_dir = pmem_rocksdb_path + "/wal";
+  options.dcpmm_kvs_enable = true;
+  options.dcpmm_kvs_mmapped_file_fullpath = pmem_rocksdb_path + "/kvs";
+  options.dcpmm_kvs_mmapped_file_size = dc->db_size_;
+  options.dcpmm_kvs_value_thres = 64; // minimal size to do kv sep
+  options.dcpmm_compress_value = false;
+  options.allow_mmap_reads = true;
+  options.allow_mmap_writes = true;
+  options.allow_dcpmm_writes = true;
+
   rocksdb::BlockBasedTableOptions block_options;
-  block_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(dc->bloom_bits_));
+  block_options.filter_policy.reset(
+      rocksdb::NewBloomFilterPolicy(dc->bloom_bits_));
   block_options.block_cache = rocksdb::NewLRUCache(dc->block_cache_size_);
 
-  options.table_factory.reset(rocksdb::NewBlockBasedTableFactory(block_options));
+  options.table_factory.reset(
+      rocksdb::NewBlockBasedTableFactory(block_options));
   options.statistics = rocksdb::CreateDBStatistics();
 
   rocksdb::Status s = rocksdb::DB::Open(options, dbfilename, &db_);
@@ -56,8 +72,9 @@ RocksDB::RocksDB(const char* dbfilename)
   }
 }
 
-Status RocksDB::Read(const std::string& table, const std::string& key, const std::vector<std::string>* fields, std::vector<KVPair>& result)
-{
+Status PMRocksDB::Read(const std::string &table, const std::string &key,
+                       const std::vector<std::string> *fields,
+                       std::vector<KVPair> &result) {
   std::string value;
   rocksdb::Status s = db_->Get(rocksdb::ReadOptions(), key, &value);
   if (s.IsNotFound()) {
@@ -74,15 +91,16 @@ Status RocksDB::Read(const std::string& table, const std::string& key, const std
   return Status::kOK;
 }
 
-Status RocksDB::Scan(const std::string& table, const std::string& key, int len, const std::vector<std::string>* fields, std::vector<std::vector<KVPair>>& result)
-{
-  rocksdb::Iterator* iter = db_->NewIterator(rocksdb::ReadOptions());
+Status PMRocksDB::Scan(const std::string &table, const std::string &key,
+                       int len, const std::vector<std::string> *fields,
+                       std::vector<std::vector<KVPair>> &result) {
+  rocksdb::Iterator *iter = db_->NewIterator(rocksdb::ReadOptions());
   iter->Seek(key);
   iter->Seek(key);
   for (int i = 0; iter->Valid() && i < len; i++) {
     std::string value = iter->value().ToString();
     result.push_back(std::vector<KVPair>());
-    std::vector<KVPair>& values = result.back();
+    std::vector<KVPair> &values = result.back();
     if (fields != nullptr) {
       DeserializeRowFilter(values, value, *fields);
     } else {
@@ -92,11 +110,10 @@ Status RocksDB::Scan(const std::string& table, const std::string& key, int len, 
   }
   delete iter;
   return Status::kOK;
-
 }
 
-Status RocksDB::Insert(const std::string& table, const std::string& key, std::vector<KVPair>& values)
-{
+Status PMRocksDB::Insert(const std::string &table, const std::string &key,
+                         std::vector<KVPair> &values) {
   std::string value;
   SerializeRow(values, value);
 
@@ -108,8 +125,8 @@ Status RocksDB::Insert(const std::string& table, const std::string& key, std::ve
   return Status::kOK;
 }
 
-Status RocksDB::Update(const std::string& table, const std::string& key, std::vector<KVPair>& values)
-{
+Status PMRocksDB::Update(const std::string &table, const std::string &key,
+                         std::vector<KVPair> &values) {
   // first read values from db
   std::string value;
   rocksdb::Status s;
@@ -123,9 +140,9 @@ Status RocksDB::Update(const std::string& table, const std::string& key, std::ve
   // then update the specific field
   std::vector<KVPair> current_values;
   DeserializeRow(current_values, value);
-  for (auto& new_field : values) {
+  for (auto &new_field : values) {
     bool found = false;
-    for (auto& current_field : current_values) {
+    for (auto &current_field : current_values) {
       if (current_field.first == new_field.first) {
         found = true;
         current_field.second = new_field.second;
@@ -146,8 +163,7 @@ Status RocksDB::Update(const std::string& table, const std::string& key, std::ve
   return Status::kOK;
 }
 
-Status RocksDB::Delete(const std::string& table, const std::string& key)
-{
+Status PMRocksDB::Delete(const std::string &table, const std::string &key) {
   rocksdb::Status s = db_->Delete(rocksdb::WriteOptions(), key);
   if (!s.ok()) {
     LOGOUT(s.ToString());
@@ -155,17 +171,15 @@ Status RocksDB::Delete(const std::string& table, const std::string& key)
   return Status::kOK;
 }
 
-void RocksDB::printStats()
-{
+void PMRocksDB::printStats() {
   std::string stats;
   db_->GetProperty("rocksdb.stats", &stats);
   cerr << stats << endl;
   cerr << options.statistics->ToString() << endl;
 }
 
-RocksDB::~RocksDB()
-{
+PMRocksDB::~PMRocksDB() {
   printStats();
   delete db_;
 }
-} //ycsbc
+} // namespace ycsbc

@@ -21,9 +21,9 @@
 
 namespace ycsbc {
 
-class RocksDB : public DB {
+class PMRocksDB : public DB {
   public:
-  RocksDB(const char* dbfilename);
+  PMRocksDB(const char* dbfilename);
   Status Read(const std::string& table, const std::string& key,
       const std::vector<std::string>* fields,
       std::vector<KVPair>& result);
@@ -42,7 +42,7 @@ class RocksDB : public DB {
 
   void printStats();
 
-  ~RocksDB();
+  ~PMRocksDB();
 
   private:
   rocksdb::DB* db_;

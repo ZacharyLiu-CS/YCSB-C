@@ -16,8 +16,8 @@ std::shared_ptr<DB> DBFactory::CreateDB(utils::Properties &props) {
     return std::make_shared<LockStlDB>();
   } else if (props["dbname"] == "leveldb") {
     return std::make_shared<LevelDB>(props["dbpath"].c_str());
-  } else if (props["dbname"] == "rocksdb") {
-    return std::make_shared<RocksDB>(props["dbpath"].c_str());
+  } else if (props["dbname"] == "pmrocksdb") {
+    return std::make_shared<PMRocksDB>(props["dbpath"].c_str());
   } else if (props["dbname"] == "pmemkv") {
     return std::make_shared<PmemKV>(props["dbpath"].c_str());
   } else if (props["dbname"] == "fastfair") {

@@ -7,6 +7,7 @@ project(ycsbc)
 #3. specify c++ compiler version
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-std=c++17 -pthread")
+add_definitions(-DON_DCPMM)
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -33,7 +34,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/include
   ${PROJECT_SOURCE_DIR}/third_party/googletest/googletest/include
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/include
-  ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/include
+  ${PROJECT_SOURCE_DIR}/db_impl/pmem-rocksdb/include
   ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/
   ${PROJECT_SOURCE_DIR}/db_impl/listdb/
   ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/include
@@ -47,7 +48,7 @@ link_directories(
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/build/
   ${PROJECT_SOURCE_DIR}/third_party/googletest/build/lib/
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/build/
-  ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/
+  ${PROJECT_SOURCE_DIR}/db_impl/pmem-rocksdb/
   ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/concurrent_pmdk/
   ${PROJECT_SOURCE_DIR}/db_impl/listdb/build
   ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/build
