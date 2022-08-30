@@ -22,6 +22,8 @@
 #include "concurrent_pmdk/src/btree.h"
 #include "core/config_reader.h"
 #include "core/db.h"
+#include "pmem_log.h"
+#include "pmem_engine.h"
 
 namespace ycsbc {
 
@@ -62,6 +64,8 @@ class FastFair : public DB {
   bt_;
   PMEMobjpool* pop_ = nullptr;
   std::atomic<unsigned> no_found_;
+  NKV::PmemEngine * engine_ptr_;
+  NKV::PmemEngineConfig engine_config_;
 
 }; //end of fastfair
 

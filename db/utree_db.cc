@@ -27,10 +27,10 @@ UTree::UTree(const char *dbfilename) : no_found_(0) {
   ConfigReader config_reader = ConfigReader();
   utree_config *uc =
       static_cast<utree_config *>(config_reader.get_config("utree").get());
-  neopmkv_config *nc =
-      static_cast<neopmkv_config *>(config_reader.get_config("neopmkv").get());
   bt_ = new btree(dbfilename, uc->db_size_);
 
+  neopmkv_config *nc =
+      static_cast<neopmkv_config *>(config_reader.get_config("neopmkv").get());
   engine_config_.chunk_size = nc->chunk_size_;
   engine_config_.engine_capacity = nc->db_size_;
   std::string db_path = dbfilename;
@@ -118,7 +118,7 @@ Status UTree::Update(const std::string &table, const std::string &key,
   NKV::PmemAddress addr;
   engine_ptr_->append(addr, value.data(), value.size());
 
-  bt_->insert(key_content, (char*)addr);
+  bt_->insert(key_content, (char *)addr);
   return Status::kOK;
 }
 
