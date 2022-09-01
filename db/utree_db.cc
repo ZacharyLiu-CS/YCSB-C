@@ -8,6 +8,7 @@
 
 #include "db/utree_db.h"
 #include "config_reader.h"
+#include "core/core_workload.h"
 #include "db.h"
 
 #define LOGOUT(msg)                                                            \
@@ -43,7 +44,7 @@ Status UTree::Read(const std::string &table, const std::string &key,
                    const std::vector<std::string> *fields,
                    std::vector<KVPair> &result) {
   char *value_ptr = nullptr;
-  int64_t key_content = getIntFromKey(key.c_str());
+  int64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
   value_ptr = bt_->search(key_content);
 
   if (value_ptr == nullptr) {
@@ -74,7 +75,7 @@ Status UTree::Insert(const std::string &table, const std::string &key,
   std::string value;
   SerializeRow(values, value);
 
-  int64_t key_content = getIntFromKey(key.c_str());
+  int64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
 
   NKV::PmemAddress addr;
   engine_ptr_->append(addr, value.data(), value.size());
@@ -87,7 +88,7 @@ Status UTree::Update(const std::string &table, const std::string &key,
                      std::vector<KVPair> &values) {
   // first read values from db
   char *value_ptr = nullptr;
-  int64_t key_content = getIntFromKey(key.c_str());
+  int64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
   value_ptr = bt_->search(key_content);
   if (value_ptr == nullptr) {
     no_found_++;
@@ -123,7 +124,7 @@ Status UTree::Update(const std::string &table, const std::string &key,
 }
 
 Status UTree::Delete(const std::string &table, const std::string &key) {
-  int64_t key_content = getIntFromKey(key.c_str());
+  int64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
   bt_->remove(key_content);
   return Status::kOK;
 }

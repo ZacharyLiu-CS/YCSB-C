@@ -7,6 +7,7 @@
 //
 
 #include "db/fastfair_db.h"
+#include "core/core_workload.h"
 
 #define LOGOUT(msg)                                                            \
   do {                                                                         \
@@ -51,9 +52,9 @@ Status FastFair::Read(const std::string &table, const std::string &key,
                       const std::vector<std::string> *fields,
                       std::vector<KVPair> &result) {
   char *value_ptr = nullptr;
-  int64_t key_content = getIntFromKey(key.c_str());
+  int64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
   value_ptr = D_RW(bt_)->btree_search(key_content);
-
+  
   if (value_ptr == nullptr) {
     no_found_++;
     return Status::kErrorNoData;
@@ -71,7 +72,7 @@ Status FastFair::Read(const std::string &table, const std::string &key,
 Status FastFair::Scan(const std::string &table, const std::string &key, int len,
                       const std::vector<std::string> *fields,
                       std::vector<std::vector<KVPair>> &result) {
-  int64_t start_key = getIntFromKey(key.c_str());
+  int64_t start_key = CoreWorkload::GetIntFromKey(key.c_str());
   uint64_t valueptr_list[len];
   D_RW(bt_)->btree_search_range(start_key, INT32_MAX, valueptr_list, len);
   for (auto i = 0; i < len; i++) {
@@ -96,7 +97,7 @@ Status FastFair::Insert(const std::string &table, const std::string &key,
   NKV::PmemAddress addr;
   engine_ptr_->append(addr, value.data(), value.size());
 
-  int64_t key_content = getIntFromKey(key.c_str());
+  int64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
   D_RW(bt_)->btree_insert(key_content, (char *)addr);
 
   return Status::kOK;
@@ -105,7 +106,7 @@ Status FastFair::Insert(const std::string &table, const std::string &key,
 Status FastFair::Update(const std::string &table, const std::string &key,
                         std::vector<KVPair> &values) {
   char *value_ptr = nullptr;
-  int64_t key_content = getIntFromKey(key.c_str());
+  int64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
   value_ptr = D_RW(bt_)->btree_search(key_content);
   if (value_ptr == nullptr) {
     no_found_++;
@@ -142,7 +143,7 @@ Status FastFair::Update(const std::string &table, const std::string &key,
 }
 
 Status FastFair::Delete(const std::string &table, const std::string &key) {
-  int64_t key_content = getIntFromKey(key.c_str());
+  int64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
   D_RW(bt_)->btree_delete(key_content);
   return Status::kOK;
 }

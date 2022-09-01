@@ -48,12 +48,7 @@ class UTree : public DB {
 
   void printStats();
 
-  inline int64_t getIntFromKey(const char* key)
-  {
-    int64_t key_content = 0;
-    sscanf(key, "%lduser0", &key_content);
-    return key_content;
-  }
+  
   ~UTree();
 
   private:

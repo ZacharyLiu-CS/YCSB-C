@@ -157,6 +157,13 @@ public:
   void SetThreadCount(size_t thread_count) { thread_count_ = thread_count; }
   void AddThreadCount(size_t add_count) { thread_count_ += add_count; };
 
+  static inline uint64_t GetIntFromKey(const char *key) {
+    uint64_t key_content = 0;
+    sscanf(key, "%luuser0", &key_content);
+    return key_content;
+  }
+
+
   bool read_all_fields() const { return read_all_fields_; }
   bool write_all_fields() const { return write_all_fields_; }
 

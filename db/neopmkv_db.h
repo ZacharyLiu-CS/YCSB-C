@@ -46,12 +46,7 @@ class NEOPMKV : public DB {
 
   ~NEOPMKV();
 
-  inline uint64_t getIntFromKey(const char* key)
-  {
-    uint64_t key_content = 0;
-    sscanf(key, "%lduser0", &key_content);
-    return key_content;
-  }
+ 
   private:
   NKV::NeoPMKV * neopmkv_ = nullptr;
   std::atomic<unsigned> no_found_;
