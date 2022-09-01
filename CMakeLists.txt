@@ -90,6 +90,7 @@ target_link_libraries(${PROJECT_NAME}
   z
   dl
   fmt::fmt
+  profiler
   )
 
 #8. define gtest path

@@ -38,7 +38,7 @@ Status NEOPMKV::Read(const std::string &table, const std::string &key,
                      const std::vector<std::string> *fields,
                      std::vector<KVPair> &result) {
   std::string value;
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   auto s = neopmkv_->get(key_content, value);
   if (s == false) {
     no_found_++;
@@ -52,7 +52,7 @@ Status NEOPMKV::Scan(const std::string &table, const std::string &key, int len,
                      const std::vector<std::string> *fields,
                      std::vector<std::vector<KVPair>> &result) {
   std::vector<std::string> read_value;
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   neopmkv_->scan(key_content, read_value, len);
   return Status::kOK;
 }
@@ -61,7 +61,7 @@ Status NEOPMKV::Insert(const std::string &table, const std::string &key,
                        std::vector<KVPair> &values) {
   std::string value;
   SerializeRow(values, value);
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
 
   auto s = neopmkv_->put(key_content, value);
   return Status::kOK;
@@ -71,7 +71,7 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
                        std::vector<KVPair> &values) {
   // first read values from db
   std::string value;
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   auto s = neopmkv_->get(key_content, value);
   if (s == false) {
     no_found_++;
@@ -86,7 +86,7 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
 }
 
 Status NEOPMKV::Delete(const std::string &table, const std::string &key) {
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key.c_str());
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   auto s = neopmkv_->remove(key_content);
 
   return Status::kOK;

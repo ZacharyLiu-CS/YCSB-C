@@ -156,13 +156,11 @@ public:
   size_t GetThreadCount() { return thread_count_; }
   void SetThreadCount(size_t thread_count) { thread_count_ = thread_count; }
   void AddThreadCount(size_t add_count) { thread_count_ += add_count; };
+  void SetKeyPerfix(const std::string key_prefix) { key_prefix_ = key_prefix; }
 
-  static inline uint64_t GetIntFromKey(const char *key) {
-    uint64_t key_content = 0;
-    sscanf(key, "%luuser0", &key_content);
-    return key_content;
+  static inline uint64_t GetIntFromKey(const std::string &key) {
+    return std::stoull(key.substr(4, -1));
   }
-
 
   bool read_all_fields() const { return read_all_fields_; }
   bool write_all_fields() const { return write_all_fields_; }
@@ -191,9 +189,9 @@ protected:
   std::string BuildKeyName(uint64_t key_num);
 
   std::string table_name_;
-  int field_count_;
-  bool read_all_fields_;
-  bool write_all_fields_;
+  int field_count_ = 1;
+  bool read_all_fields_ = true;
+  bool write_all_fields_ = true;
   Generator<uint64_t> *field_len_generator_;
   Generator<uint64_t> *key_generator_;
   DiscreteGenerator<Operation> op_chooser_;
@@ -201,11 +199,12 @@ protected:
   Generator<uint64_t> *field_chooser_;
   Generator<uint64_t> *scan_len_chooser_;
   CounterGenerator insert_key_sequence_;
-  bool ordered_inserts_;
-  size_t record_count_;
-  size_t op_count_;
-  size_t thread_count_;
-  int zero_padding_;
+  bool ordered_inserts_ = false;
+  size_t record_count_ = 0;
+  size_t op_count_ = 0;
+  size_t thread_count_ = 1;
+  int zero_padding_ = 24;
+  std::string key_prefix_ = "TYP0";
 };
 
 inline std::string CoreWorkload::NextSequenceKey() {
@@ -228,7 +227,7 @@ inline std::string CoreWorkload::BuildKeyName(uint64_t key_num) {
   std::string key_num_str = std::to_string(key_num);
   int zeros = zero_padding_ - key_num_str.length() - 4;
   zeros = std::max(0, zeros);
-  return std::string("user").append(zeros, '0').append(key_num_str);
+  return std::string(key_prefix_).append(zeros, '0').append(key_num_str);
 }
 
 inline std::string CoreWorkload::NextFieldName() {

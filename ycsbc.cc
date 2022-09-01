@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cstring>
 #include <future>
+#include <gperftools/profiler.h>
 #include <iostream>
 #include <memory>
 #include <ratio>
@@ -74,7 +75,7 @@ int main(const int argc, const char *argv[]) {
     db->Init();
     // calculate the total time usage
     timer.Start();
-
+    ProfilerStart("load_ycsbc_phase.prof");
     for (int i = 0; i < num_threads; ++i) {
       auto histogram_tmp =
           make_shared<utils::Histogram>(utils::RecordUnit::h_microseconds);
@@ -96,6 +97,7 @@ int main(const int argc, const char *argv[]) {
 
     double duration = timer.End();
     db->Close();
+    ProfilerStop();
 
     utils::Histogram histogram(utils::RecordUnit::h_microseconds);
     for (auto &h : histogram_list) {
@@ -118,6 +120,7 @@ int main(const int argc, const char *argv[]) {
   total_ops = 0;
 
   // calculate the total time usage
+  ProfilerStart("run_ycsbc_phase.prof");
   timer.Start();
   for (int i = 0; i < num_threads; ++i) {
     auto histogram_tmp =
@@ -139,7 +142,7 @@ int main(const int argc, const char *argv[]) {
     sum += n.get();
   }
   auto duration = timer.End();
-
+  ProfilerStop();
   utils::Histogram histogram(utils::RecordUnit::h_microseconds);
   for (auto &h : histogram_list) {
     histogram.Merge(*h);

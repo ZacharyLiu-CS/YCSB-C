@@ -138,7 +138,8 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
   insert_key_sequence_.Set(record_count_);
 
   if (request_dist == "uniform") {
-    key_chooser_ = new UniformGenerator(0, record_count_ - 1);
+    key_chooser_ =
+        new UniformGenerator(insert_start, insert_start + record_count_ - 1);
 
   } else if (request_dist == "zipfian") {
     // If the number of keys changes, we don't want to change popular keys.
@@ -149,7 +150,8 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
     op_count_ = std::stoi(p.GetProperty(OPERATION_COUNT_PROPERTY));
     thread_count_ = thread_count;
     int new_keys = (int)(op_count_ * insert_proportion * 2); // a fudge factor
-    key_chooser_ = new ScrambledZipfianGenerator(record_count_ + new_keys);
+    key_chooser_ = new ScrambledZipfianGenerator(
+        insert_start, insert_start + record_count_ + new_keys);
 
   } else if (request_dist == "latest") {
     key_chooser_ = new SkewedLatestGenerator(insert_key_sequence_);
