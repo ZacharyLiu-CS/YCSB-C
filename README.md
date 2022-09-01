@@ -41,6 +41,19 @@ implementation of the database, for example:
 $ cd build
 $ ./ycsbc -db leveldb -dbpath . -P ../workloads/workloada.spec -threads 4
 ```
+# New Features: Mixed Workload
+Now we can configure one mixed workload to run serveral different single workload at the same time. The basic element is workload unit.
+One workload unit can be executed at least one thread.
+
+So there is the thread task allocation model.  
+For example, assume that we have a mixed workload has `{ workloada: 1, workloadb:2, workloadc unit:3}`.   
+So if we have 12 threads, we will allocate them like this: `thread 0 -> workloada; thread 1,2 -> workloadb; thread 3,4,5 -> workloadc; thread 6 -> workloada; thread 7,8 -> workloadb; thread 9,10 -> workloadc`.  
+After all we can see each workload unit has two threads to execute, so each thread will execute halt of the recordcount/operationcount.
+### Usage
+```
+$ cd build
+$ ./ycsbc -db leveldb -dbpath . -P ../workloads/mixedworkload_template.spec -threads 6
+```
 
 Note that we do not have load and run commands as the original YCSB. Specify
 how many records to load by the recordcount property. Reference properties

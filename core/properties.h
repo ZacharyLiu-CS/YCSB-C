@@ -26,6 +26,13 @@ class Properties {
 
   void SetProperty(const std::string &key, const std::string &value);
   bool Load(std::ifstream &input);
+  std::string ToString(){
+    std::string output;
+    for (auto i : properties_){
+      output.append("Props: " + i.first + "\t Value: " + i.second + "\n");
+    }
+    return output;
+  }
  private:
   std::map<std::string, std::string> properties_;
 };
