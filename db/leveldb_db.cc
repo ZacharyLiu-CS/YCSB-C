@@ -151,15 +151,15 @@ Status LevelDB::Delete(const std::string& table, const std::string& key)
 
 void LevelDB::printStats()
 {
-  std::string stats;
-  db_->GetProperty("leveldb.stats", &stats);
-  std::cout << stats << std::endl;
+  // std::string stats;
+  // db_->GetProperty("leveldb.stats", &stats);
+  // std::cout << stats << std::endl;
+  std::cout << "print leveldb statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
 
 LevelDB::~LevelDB()
 {
-  std::cout << "print leveldb statistics: " << std::endl;
   printStats();
   delete db_;
 }

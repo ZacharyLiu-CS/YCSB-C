@@ -154,12 +154,12 @@ Status PmemKV::Delete(const std::string& table, const std::string& key)
 
 void PmemKV::printStats()
 {
+  std::cout << "print pmemkv statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
 
 PmemKV::~PmemKV()
 {
-  std::cout << "print pmemkv statistics: " << std::endl;
   printStats();
   delete db_;
 }

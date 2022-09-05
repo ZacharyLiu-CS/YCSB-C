@@ -113,11 +113,11 @@ Status LISTDB::Delete(const std::string &table, const std::string &key) {
 }
 
 void LISTDB::printStats() {
+  std::cout << "print listdb statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
 
 LISTDB::~LISTDB() {
-  std::cout << "print fastfair statistics: " << std::endl;
   printStats();
   delete client_;
   delete db_;

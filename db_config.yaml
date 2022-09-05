@@ -6,7 +6,7 @@ leveldb:
   block_cache_size: "128MB" # e.g. "100MB" or "10GB"
   memtable_size: "128MB" # e.g. "64MB"
   sst_file_size: "32MB"
-  db_size: "16GB"
+  db_size: "32GB"
 pmrocksdb:
   bloom_bits: 10
   enable_direct_io: false
@@ -15,17 +15,17 @@ pmrocksdb:
   block_cache_size: "128MB" # e.g. "100MB" or "10GB"
   memtable_size: "128MB" # e.g. "64MB"
   sst_file_size: "32MB"
-  db_size: "16GB"
+  db_size: "32GB"
 pmemkv:
   create_if_missing: true
-  db_size: "16GB"
+  db_size: "32GB"
   engine_type: "radix"
 fastfair:
-  db_size: "16GB"
+  db_size: "32GB"
 listdb:
   pool_size: "64MB"
 utree:
-  db_size: "16GB"
+  db_size: "32GB"
 neopmkv:
-  db_size: "16GB"
-  chunk_size: "64MB"
+  db_size: "32GB"
+  chunk_size: "128MB"

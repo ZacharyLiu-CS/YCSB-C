@@ -130,11 +130,11 @@ Status UTree::Delete(const std::string &table, const std::string &key) {
 }
 
 void UTree::printStats() {
+  std::cout << "print utree statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
 
 UTree::~UTree() {
-  std::cout << "print fastfair statistics: " << std::endl;
   printStats();
   delete bt_;
   delete engine_ptr_;

@@ -44,6 +44,9 @@ void MixedWorkload::Init(utils::Properties &props, size_t thread_count) {
   if (type == "single") {
     workload_type = WorkloadType::Single;
     single_workload.Init(props, thread_count);
+    // std::cout << "Single workload Record Count: " << single_workload.GetRecordCount()<< std::endl;
+    // std::cout << "Single workload Operation Count: " << single_workload.GetOperationCount()<< std::endl;
+    // std::cout << "Single workload Thread Count:" << single_workload.GetThreadCount() << std::endl;
     return;
   }
   // here is the mixed workload configuration

@@ -25,6 +25,16 @@ pkg_check_modules(LIBPMEM REQUIRED libpmem)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(ENGINE_TREE3 "enable experimental tree3 engine" ON)
 
+# enable test
+option(BUILD_TESTS "Build test programs" ON)
+# enable gperftools
+option(ENABLE_GPERF "Enable google perftools" OFF)
+
+# if the option is true, add compile definitions
+if(ENABLE_GPERF)
+  add_definitions(-DENABLE_GPERF)
+endif(ENABLE_GPERF)
+
 
 #4. head file path
 include_directories(
@@ -93,45 +103,47 @@ target_link_libraries(${PROJECT_NAME}
   profiler
   )
 
-#8. define gtest path
-set(GTEST_LIBRARY ${PROJECT_SOURCE_DIR}/third_party/googletest/build/lib)
-set(GTEST_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/third_party/googletest/googletest/include)
-set(GTEST_MAIN_LIBRARY ${GTEST_LIBRARY})
 
-#9. compile test files
-find_package(GTest)
-enable_testing()
-if (GTEST_FOUND)
-  file(GLOB TEST_FILE ${PROJECT_SOURCE_DIR}/tests/*.cc)
-  foreach(testsourcefile ${TEST_FILE})
-    string(REGEX MATCH "[^/]+$" testsourcefilewithoutpath ${testsourcefile})
-    string(REPLACE ".cc" "" testname ${testsourcefilewithoutpath})
-    add_executable( ${testname} ${testsourcefile} ${SOURCE_FILE})
-    target_link_libraries(${testname}
-      ${LIBPMEMOBJ_LIBRARIES}
-      pmemobj
-      pmem
-      pthread
-      yaml-cpp
-      gtest
-      leveldb
-      rocksdb
-      pmemkv
-      fastfair
-      utree
-      listdb
-      neopmkv
-      snappy
-      zstd
-      lz4
-      bz2
-      z
-      dl
-      fmt::fmt
-      )
-    add_test(NAME ${testname} COMMAND ${testname})
-  ENDFOREACH(testsourcefile ${TEST_FILE})
-endif()
+if(BUILD_TESTS)
+  #8. define gtest path
+  set(GTEST_LIBRARY ${PROJECT_SOURCE_DIR}/third_party/googletest/build/lib)
+  set(GTEST_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/third_party/googletest/googletest/include)
+  set(GTEST_MAIN_LIBRARY ${GTEST_LIBRARY})
 
+  #9. compile test files
+  find_package(GTest)
+  enable_testing()
+  if (GTEST_FOUND)
+    file(GLOB TEST_FILE ${PROJECT_SOURCE_DIR}/tests/*.cc)
+    foreach(testsourcefile ${TEST_FILE})
+      string(REGEX MATCH "[^/]+$" testsourcefilewithoutpath ${testsourcefile})
+      string(REPLACE ".cc" "" testname ${testsourcefilewithoutpath})
+      add_executable( ${testname} ${testsourcefile} ${SOURCE_FILE})
+      target_link_libraries(${testname}
+        ${LIBPMEMOBJ_LIBRARIES}
+        pmemobj
+        pmem
+        pthread
+        yaml-cpp
+        gtest
+        leveldb
+        rocksdb
+        pmemkv
+        fastfair
+        utree
+        listdb
+        neopmkv
+        snappy
+        zstd
+        lz4
+        bz2
+        z
+        dl
+        fmt::fmt
+        )
+      add_test(NAME ${testname} COMMAND ${testname})
+    ENDFOREACH(testsourcefile ${TEST_FILE})
+  endif()
+endif(BUILD_TESTS)
 
 

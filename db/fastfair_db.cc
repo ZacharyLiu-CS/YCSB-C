@@ -54,7 +54,7 @@ Status FastFair::Read(const std::string &table, const std::string &key,
   char *value_ptr = nullptr;
   int64_t key_content = CoreWorkload::GetIntFromKey(key);
   value_ptr = D_RW(bt_)->btree_search(key_content);
-  
+
   if (value_ptr == nullptr) {
     no_found_++;
     return Status::kErrorNoData;
@@ -139,7 +139,6 @@ Status FastFair::Update(const std::string &table, const std::string &key,
 
   D_RW(bt_)->btree_insert(key_content, (char *)addr);
   return Status::kOK;
-
 }
 
 Status FastFair::Delete(const std::string &table, const std::string &key) {
@@ -149,11 +148,11 @@ Status FastFair::Delete(const std::string &table, const std::string &key) {
 }
 
 void FastFair::printStats() {
+  std::cout << "print fastfair statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
 
 FastFair::~FastFair() {
-  std::cout << "print fastfair statistics: " << std::endl;
   printStats();
   pmemobj_close(pop_);
   delete engine_ptr_;

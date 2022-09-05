@@ -172,10 +172,12 @@ Status PMRocksDB::Delete(const std::string &table, const std::string &key) {
 }
 
 void PMRocksDB::printStats() {
-  std::string stats;
-  db_->GetProperty("rocksdb.stats", &stats);
-  cerr << stats << endl;
-  cerr << options.statistics->ToString() << endl;
+  // std::string stats;
+  // db_->GetProperty("rocksdb.stats", &stats);
+  // cerr << stats << endl;
+  // cerr << options.statistics->ToString() << endl;
+  std::cout << "print pmrocksdb statistics: " << std::endl;
+  std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
 
 PMRocksDB::~PMRocksDB() {

@@ -95,6 +95,8 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
       READMODIFYWRITE_PROPORTION_PROPERTY, READMODIFYWRITE_PROPORTION_DEFAULT));
 
   record_count_ = std::stoi(p.GetProperty(RECORD_COUNT_PROPERTY));
+  op_count_ = std::stoi(p.GetProperty(OPERATION_COUNT_PROPERTY));
+  thread_count_ = thread_count;
   std::string request_dist = p.GetProperty(REQUEST_DISTRIBUTION_PROPERTY,
                                            REQUEST_DISTRIBUTION_DEFAULT);
   zero_padding_ =
@@ -147,8 +149,6 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
     // that is larger than what exists at the beginning of the test.
     // If the generator picks a key that is not inserted yet, we just ignore it
     // and pick another key.
-    op_count_ = std::stoi(p.GetProperty(OPERATION_COUNT_PROPERTY));
-    thread_count_ = thread_count;
     int new_keys = (int)(op_count_ * insert_proportion * 2); // a fudge factor
     key_chooser_ = new ScrambledZipfianGenerator(
         insert_start, insert_start + record_count_ + new_keys);

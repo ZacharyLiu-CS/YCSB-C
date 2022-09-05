@@ -24,7 +24,8 @@ NEOPMKV::NEOPMKV(const char *dbfilename) : no_found_(0) {
   res = system(mkdir_cmd.c_str());
 
   ConfigReader config_reader = ConfigReader();
-  neopmkv_config* nc = static_cast<neopmkv_config*>(config_reader.get_config("neopmkv").get());
+  neopmkv_config *nc =
+      static_cast<neopmkv_config *>(config_reader.get_config("neopmkv").get());
 
   if (neopmkv_ == nullptr) {
     neopmkv_ = new NKV::NeoPMKV(dbfilename, nc->chunk_size_, nc->db_size_);
@@ -93,6 +94,7 @@ Status NEOPMKV::Delete(const std::string &table, const std::string &key) {
 }
 
 void NEOPMKV::printStats() {
+  std::cout << "print neopmkv statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
 
