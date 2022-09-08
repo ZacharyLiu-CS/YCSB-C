@@ -28,7 +28,9 @@ NEOPMKV::NEOPMKV(const char *dbfilename) : no_found_(0) {
       static_cast<neopmkv_config *>(config_reader.get_config("neopmkv").get());
 
   if (neopmkv_ == nullptr) {
-    neopmkv_ = new NKV::NeoPMKV(dbfilename, nc->chunk_size_, nc->db_size_);
+    neopmkv_ =
+        new NKV::NeoPMKV(dbfilename, nc->chunk_size_, nc->db_size_,
+                         nc->enable_pbrb_, nc->async_pbrb_, nc->max_page_num_);
   }
   if (neopmkv_ == nullptr) {
     LOGOUT("init neopmkv failed!");
@@ -39,8 +41,9 @@ Status NEOPMKV::Read(const std::string &table, const std::string &key,
                      const std::vector<std::string> *fields,
                      std::vector<KVPair> &result) {
   std::string value;
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
-  auto s = neopmkv_->get(key_content, value);
+  NKV::SchemaId schemaId = key[3] - '0';
+  NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
+  auto s = neopmkv_->get(read_key, value);
   if (s == false) {
     no_found_++;
     return Status::kErrorNoData;
@@ -53,8 +56,10 @@ Status NEOPMKV::Scan(const std::string &table, const std::string &key, int len,
                      const std::vector<std::string> *fields,
                      std::vector<std::vector<KVPair>> &result) {
   std::vector<std::string> read_value;
+  NKV::SchemaId schemaId = key[3] - '0';
+  NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
   uint64_t key_content = CoreWorkload::GetIntFromKey(key);
-  neopmkv_->scan(key_content, read_value, len);
+  neopmkv_->scan(read_key, read_value, len);
   return Status::kOK;
 }
 
@@ -62,9 +67,9 @@ Status NEOPMKV::Insert(const std::string &table, const std::string &key,
                        std::vector<KVPair> &values) {
   std::string value;
   SerializeRow(values, value);
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
-
-  auto s = neopmkv_->put(key_content, value);
+  NKV::SchemaId schemaId = key[3] - '0';
+  NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
+  auto s = neopmkv_->put(read_key, value);
   return Status::kOK;
 }
 
@@ -72,23 +77,42 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
                        std::vector<KVPair> &values) {
   // first read values from db
   std::string value;
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
-  auto s = neopmkv_->get(key_content, value);
+  NKV::SchemaId schemaId = key[3] - '0';
+  NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
+
+  auto s = neopmkv_->get(read_key, value);
   if (s == false) {
     no_found_++;
     return Status::kErrorNoData;
-  } // then update the specific field
-
+  }
+  // then update the specific field
+  std::vector<KVPair> current_values;
+  DeserializeRow(current_values, value);
+  for (auto &new_field : values) {
+    bool found = false;
+    for (auto &current_field : current_values) {
+      if (current_field.first == new_field.first) {
+        found = true;
+        current_field.second = new_field.second;
+        break;
+      }
+    }
+    if (found == false) {
+      break;
+    }
+  }
   value.clear();
   SerializeRow(values, value);
-  s = neopmkv_->put(key_content, value);
+  s = neopmkv_->put(read_key, value);
 
   return Status::kOK;
 }
 
 Status NEOPMKV::Delete(const std::string &table, const std::string &key) {
-  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
-  auto s = neopmkv_->remove(key_content);
+  NKV::SchemaId schemaId = key[3] - '0';
+  NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
+
+  auto s = neopmkv_->remove(read_key);
 
   return Status::kOK;
 }

@@ -156,7 +156,24 @@ public:
   size_t GetThreadCount() { return thread_count_; }
   void SetThreadCount(size_t thread_count) { thread_count_ = thread_count; }
   void AddThreadCount(size_t add_count) { thread_count_ += add_count; };
-  void SetKeyPerfix(const std::string key_prefix) { key_prefix_ = key_prefix; }
+  void SetWorkloadType(const std::string &workload_type) {
+    workload_type_ = workload_type;
+  }
+  std::string GetWorkloadType(){
+    return workload_type_;
+  }
+  std::pair<size_t, size_t> GetValueStructure(){
+    return {field_count_, field_len_generator_->Next()};
+  }
+  void InitializeTypeId(uint64_t new_id) {
+    if (type_id_ != UINT64_MAX) {
+      type_id_ = new_id;
+      workload_type_[3] = std::to_string(type_id_%10)[0];
+    }
+  }
+  uint64_t GetTypeId(){
+    return type_id_;
+  }
 
   static inline uint64_t GetIntFromKey(const std::string &key) {
     return std::stoull(key.substr(4, -1));
@@ -204,7 +221,8 @@ protected:
   size_t op_count_ = 0;
   size_t thread_count_ = 1;
   int zero_padding_ = 24;
-  std::string key_prefix_ = "TYP0";
+  std::string workload_type_ = "T0S0";
+  uint64_t type_id_ = UINT64_MAX;
 };
 
 inline std::string CoreWorkload::NextSequenceKey() {
@@ -227,7 +245,7 @@ inline std::string CoreWorkload::BuildKeyName(uint64_t key_num) {
   std::string key_num_str = std::to_string(key_num);
   int zeros = zero_padding_ - key_num_str.length() - 4;
   zeros = std::max(0, zeros);
-  return std::string(key_prefix_).append(zeros, '0').append(key_num_str);
+  return std::string(workload_type_).append(zeros, '0').append(key_num_str);
 }
 
 inline std::string CoreWorkload::NextFieldName() {

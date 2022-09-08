@@ -82,8 +82,8 @@ void MixedWorkload::Init(utils::Properties &props, size_t thread_count) {
           props.GetProperty(SUBWORKLOAD_OPERATIONCOUNT_PROPERTY_LIST[i],
                             SUBWORKLOAD_OPERATIONCOUNT_DEFAULT));
       sub_workload->Init(tmp_props, 0);
-      sub_workload->SetKeyPerfix(std::string("TYP") +
-                                 subworkload_props_name.at(0));
+      sub_workload->SetWorkloadType(std::string("T") +
+                                 subworkload_props_name.at(0) + "S0");
       tmp_ifstream.close();
     }
     // insert into the ratio table

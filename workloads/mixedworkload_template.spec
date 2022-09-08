@@ -20,7 +20,7 @@ workloadc.spec=1
 c_recordcount=1000000
 c_operationcount=1000000
 
-workloadd.spec=0
+workloadd.spec=1
 d_recordcount=1000000
 d_operationcount=1000000
 

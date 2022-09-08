@@ -15,6 +15,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <mutex>
 
 #include "core/config_reader.h"
 #include "core/db.h"
@@ -50,6 +51,7 @@ class PmemKV : public DB {
   pmem::kv::db* db_;
   pmem::kv::config cfg_;
   std::atomic<unsigned> no_found_;
+  std::mutex mutex_;
 
 }; //end of PmemKV
 

@@ -18,52 +18,49 @@
 #include <unistd.h>
 #include <vector>
 
-
 #include "concurrent_pmdk/src/btree.h"
 #include "core/config_reader.h"
 #include "core/db.h"
-#include "pmem_log.h"
 #include "pmem_engine.h"
+#include "pmem_log.h"
 
 namespace ycsbc {
 
 using namespace fastfair;
 class FastFair : public DB {
-  public:
-  FastFair(const char* dbfilename);
-  Status Read(const std::string& table, const std::string& key,
-      const std::vector<std::string>* fields,
-      std::vector<KVPair>& result);
+public:
+  FastFair(const char *dbfilename);
+  Status Read(const std::string &table, const std::string &key,
+              const std::vector<std::string> *fields,
+              std::vector<KVPair> &result);
 
-  Status Scan(const std::string& table, const std::string& key,
-      int len, const std::vector<std::string>* fields,
-      std::vector<std::vector<KVPair>>& result);
+  Status Scan(const std::string &table, const std::string &key, int len,
+              const std::vector<std::string> *fields,
+              std::vector<std::vector<KVPair>> &result);
 
-  Status Insert(const std::string& table, const std::string& key,
-      std::vector<KVPair>& values);
+  Status Insert(const std::string &table, const std::string &key,
+                std::vector<KVPair> &values);
 
-  Status Update(const std::string& table, const std::string& key,
-      std::vector<KVPair>& values);
+  Status Update(const std::string &table, const std::string &key,
+                std::vector<KVPair> &values);
 
-  Status Delete(const std::string& table, const std::string& key);
+  Status Delete(const std::string &table, const std::string &key);
 
   void close();
 
   void printStats();
 
-
   ~FastFair();
 
-  private:
-  TOID(btree)
-  bt_;
-  PMEMobjpool* pop_ = nullptr;
+private:
+  TOID(btree) bt_;
+  PMEMobjpool *pop_ = nullptr;
   std::atomic<unsigned> no_found_;
-  NKV::PmemEngine * engine_ptr_;
+  NKV::PmemEngine *engine_ptr_;
   NKV::PmemEngineConfig engine_config_;
 
-}; //end of fastfair
+}; // end of fastfair
 
-} //ycsbc
+} // namespace ycsbc
 
-#endif //YCSB_C_FastFair_DB_H
+#endif // YCSB_C_FastFair_DB_H

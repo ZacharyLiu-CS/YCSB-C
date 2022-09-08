@@ -86,6 +86,9 @@ struct utree_config : public config_templates {
 struct neopmkv_config : public config_templates {
   uint64_t chunk_size_;
   uint64_t db_size_;
+  bool enable_pbrb_;
+  bool async_pbrb_;
+  uint64_t max_page_num_;
 };
 
 } // namespace ycsbc
@@ -242,6 +245,9 @@ template <> struct convert<ycsbc::utree_config> {
 // struct neopmkv_config : public config_templates {
 //   uint64_t chunk_size_;
 //   uint64_t db_size_;
+//   bool enable_pbrb_;
+//   bool async_pbrb_;
+//   uint64_t max_page_num_;
 // };
 template <> struct convert<ycsbc::neopmkv_config> {
   static YAML::Node encode(const ycsbc::neopmkv_config &nc) {
@@ -253,6 +259,9 @@ template <> struct convert<ycsbc::neopmkv_config> {
     ycsbc::convert_to_string(db_size, nc.db_size_);
     // push back all config
     node.push_back(db_size);
+    node.push_back(nc.enable_pbrb_);
+    node.push_back(nc.async_pbrb_);
+    node.push_back(nc.max_page_num_);
     return node;
   }
 
@@ -264,6 +273,9 @@ template <> struct convert<ycsbc::neopmkv_config> {
     nc.chunk_size_ = ycsbc::convert_to_base(chunk_size);
     std::string db_size = node["db_size"].as<std::string>();
     nc.db_size_ = ycsbc::convert_to_base(db_size);
+    nc.enable_pbrb_ = node["enable_pbrb"].as<bool>();
+    nc.async_pbrb_ = node["async_pbrb"].as<bool>();
+    nc.max_page_num_ = node["max_page_num"].as<uint64_t>();
     return true;
   }
 };

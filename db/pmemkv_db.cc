@@ -9,6 +9,7 @@
 #include <iostream>
 #include <libpmemkv.h>
 #include <libpmemkv.hpp>
+#include <mutex>
 #include <vector>
 
 #include "db.h"
@@ -51,6 +52,7 @@ Status PmemKV::Read(const std::string& table, const std::string& key,
                     const std::vector<std::string>* fields,
     std::vector<KVPair>& result)
 {
+  std::lock_guard<std::mutex> guard(mutex_);
   std::string value;
   status s = db_->get(key, &value);
   if( s == status::NOT_FOUND ){
@@ -69,6 +71,8 @@ Status PmemKV::Scan(const std::string& table, const std::string& key, int len,
     const std::vector<std::string>* fields,
     std::vector<std::vector<KVPair>>& result)
 {
+
+  std::lock_guard<std::mutex> guard(mutex_);
   auto res_iter = db_->new_read_iterator();
   if ( !res_iter.is_ok() ){
     LOGOUT("Error new read iterator in pmemkv");
@@ -97,6 +101,8 @@ Status PmemKV::Scan(const std::string& table, const std::string& key, int len,
 Status PmemKV::Insert(const std::string& table, const std::string& key,
     std::vector<KVPair>& values)
 {
+
+  std::lock_guard<std::mutex> guard(mutex_);
   std::string value;
   SerializeRow(values, value);
 
@@ -110,6 +116,8 @@ Status PmemKV::Insert(const std::string& table, const std::string& key,
 Status PmemKV::Update(const std::string& table, const std::string& key,
     std::vector<KVPair>& values)
 {
+
+  std::lock_guard<std::mutex> guard(mutex_);
   // first read values from db
   std::string value;
   status s = db_->get(key, &value);
@@ -145,6 +153,8 @@ Status PmemKV::Update(const std::string& table, const std::string& key,
 
 Status PmemKV::Delete(const std::string& table, const std::string& key)
 {
+  
+  std::lock_guard<std::mutex> guard(mutex_);
   status s = db_->remove(key);
   if ( s!= status::OK ){
     LOGOUT("Error delete data from pmemkv!");

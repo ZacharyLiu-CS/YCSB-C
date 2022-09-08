@@ -32,6 +32,13 @@ public:
   ///
   virtual void Init() {}
   ///
+  ///
+  /// Create Schema first
+  virtual uint64_t CreateSchema(std::string schema_name = "T0S0",
+                                size_t field_count = 10,
+                                size_t field_len = 100) {
+    return 0;
+  }
   /// Clears any state for accessing this DB.
   /// Called once per DB client (thread); there is a single DB instance
   /// globally.
@@ -117,10 +124,6 @@ inline void ShiftCharToZero(char *p, uint32_t len) {
 // convert value_fields -> data
 inline void SerializeRow(const std::vector<DB::KVPair> &value_fields,
                          std::string &data) {
-  if (value_fields.size() == 1 && value_fields[0].second.size() <= 8) {
-    data.append(value_fields[0].second);
-    return;
-  }
   // get the field name and value size
   uint32_t field_name_len = value_fields[0].first.size();
   uint32_t field_value_len = value_fields[0].second.size();
@@ -142,11 +145,6 @@ inline void SerializeRow(const std::vector<DB::KVPair> &value_fields,
 // convert data -> value_fields
 inline void DeserializeRow(std::vector<DB::KVPair> &value_fields,
                            const std::string &data) {
-  if (data.size() <= 8) {
-    std::string field_name = "field0";
-    value_fields.push_back({field_name, data});
-    return ;
-  }
   const char *p = data.data();
   const char *end = p + data.size();
   while (p != end) {
@@ -169,11 +167,6 @@ inline void DeserializeRow(std::vector<DB::KVPair> &value_fields,
 inline void DeserializeRowFilter(std::vector<DB::KVPair> &value_fields,
                                  const std::string &data,
                                  const std::vector<std::string> &fields) {
-  if (data.size() <= 8) {
-    std::string field_name = "field0";
-    value_fields.push_back({field_name, data});
-    return ;
-  }
   const char *p = data.data();
   const char *end = p + data.size();
   std::vector<std::string>::const_iterator filter_iter = fields.begin();

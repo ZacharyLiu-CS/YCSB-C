@@ -39,6 +39,11 @@ int DelegateClient(shared_ptr<ycsbc::DB> db, ycsbc::CoreWorkload *wl,
                    shared_ptr<utils::Histogram> histogram) {
   utils::Timer<utils::t_microseconds> timer;
   ycsbc::Client client(db, *wl);
+  auto [field_count, field_len] = wl->GetValueStructure();
+  if(wl->GetTypeId() == UINT64_MAX){
+    auto schema_id = db->CreateSchema(wl->GetWorkloadType(),field_count, field_len);
+    wl->InitializeTypeId(schema_id);
+  }
   int oks = 0;
   for (int i = 0; i < num_ops; ++i) {
     timer.Start();
