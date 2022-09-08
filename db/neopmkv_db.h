@@ -33,7 +33,7 @@ class NEOPMKV : public DB {
     for(auto i = 0; i< field_count; i++){
         std::string field_name = std::string("field").append(std::to_string(i));
         std::string field_content = std::string("content").append(std::to_string(i));
-
+        std::cout << "field name size: " << field_name.size() << std::endl;
         fields.push_back(NKV::SchemaField(NKV::FieldType::STRING, field_name, field_name.size()));
         fields.push_back(NKV::SchemaField(NKV::FieldType::STRING,field_content, field_len));
     }

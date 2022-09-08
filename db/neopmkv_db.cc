@@ -42,6 +42,7 @@ Status NEOPMKV::Read(const std::string &table, const std::string &key,
                      std::vector<KVPair> &result) {
   std::string value;
   NKV::SchemaId schemaId = key[3] - '0';
+
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
   auto s = neopmkv_->get(read_key, value);
   if (s == false) {

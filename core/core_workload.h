@@ -166,7 +166,7 @@ public:
     return {field_count_, field_len_generator_->Next()};
   }
   void InitializeTypeId(uint64_t new_id) {
-    if (type_id_ != UINT64_MAX) {
+    if (type_id_ == UINT64_MAX) {
       type_id_ = new_id;
       workload_type_[3] = std::to_string(type_id_%10)[0];
     }

@@ -13,6 +13,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 namespace ycsbc {
 
@@ -129,6 +130,7 @@ inline void SerializeRow(const std::vector<DB::KVPair> &value_fields,
   uint32_t field_value_len = value_fields[0].second.size();
   uint32_t data_size = value_fields.size() * (2 * sizeof(uint32_t) +
                                               field_name_len + field_value_len);
+
   data.reserve(data_size);
   for (const DB::KVPair &p : value_fields) {
     uint32_t name_len = p.first.size();
