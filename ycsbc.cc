@@ -43,7 +43,7 @@ int DelegateClient(shared_ptr<ycsbc::DB> db, ycsbc::CoreWorkload *wl,
     auto [field_count, field_len] = wl->GetValueStructure();
     auto schema_id =
         db->CreateSchema(wl->GetWorkloadType(), field_count, field_len);
-    std::cout << "we got schema id" << schema_id << std::endl;
+    std::cout << "we got schema id: " << schema_id << std::endl;
     wl->InitializeTypeId(schema_id);
   }
   int oks = 0;

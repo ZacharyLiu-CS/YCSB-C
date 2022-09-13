@@ -103,7 +103,7 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
     }
   }
   value.clear();
-  SerializeRow(values, value);
+  SerializeRow(current_values, value);
   s = neopmkv_->put(read_key, value);
 
   return Status::kOK;

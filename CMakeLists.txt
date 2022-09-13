@@ -30,8 +30,17 @@ option(BUILD_TESTS "Build test programs" ON)
 # enable gperftools
 option(ENABLE_GPERF "Enable google perftools" OFF)
 
+option(ENABLE_NEOPMKV_STATISTICS "Enable neopmkv statistics" ON)
+
+if(ENABLE_NEOPMKV_STATISTICS)
+  message("Enable neopmkv statistics!")
+  add_compile_definitions(ENABLE_BREAKDOWN)
+  add_compile_definitions(ENABLE_STATISTICS)
+endif(ENABLE_NEOPMKV_STATISTICS)
+
 # if the option is true, add compile definitions
 if(ENABLE_GPERF)
+  message("Enable google perftools!")
   add_definitions(-DENABLE_GPERF)
 endif(ENABLE_GPERF)
 
@@ -47,7 +56,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/db_impl/pmem-rocksdb/include
   ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/
   ${PROJECT_SOURCE_DIR}/db_impl/listdb/
-  ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/include
+  ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/build/neopmkv/include
   ${PROJECT_SOURCE_DIR}/db_impl/utree
   ${LIBPMEMKV_INCLUDE_DIRS}
   ${LIBPMEMOBJ_INCLUDE_DIRS}
@@ -61,7 +70,7 @@ link_directories(
   ${PROJECT_SOURCE_DIR}/db_impl/pmem-rocksdb/
   ${PROJECT_SOURCE_DIR}/db_impl/FAST_FAIR/concurrent_pmdk/
   ${PROJECT_SOURCE_DIR}/db_impl/listdb/build
-  ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/build
+  ${PROJECT_SOURCE_DIR}/db_impl/NeoPMKV/build/neopmkv/lib
   ${PROJECT_SOURCE_DIR}/db_impl/utree
   ${LIBPMEMKV_LIBRARY_DIRS}
   ${LIBPMEMOBJ_LIBRARY_DIRS}
