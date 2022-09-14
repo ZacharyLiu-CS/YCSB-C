@@ -29,6 +29,6 @@ utree:
 neopmkv:
   db_size: "32GB"
   chunk_size: "128MB"
-  enable_pbrb: false
+  enable_pbrb: true
   async_pbrb: false
   max_page_num: 2621440

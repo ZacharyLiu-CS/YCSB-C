@@ -77,35 +77,14 @@ Status NEOPMKV::Insert(const std::string &table, const std::string &key,
 Status NEOPMKV::Update(const std::string &table, const std::string &key,
                        std::vector<KVPair> &values) {
   // first read values from db
-  std::string value;
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
 
-  auto s = neopmkv_->get(read_key, value);
+  auto s = neopmkv_->update(read_key, values);
   if (s == false) {
     no_found_++;
     return Status::kErrorNoData;
   }
-  // then update the specific field
-  std::vector<KVPair> current_values;
-  DeserializeRow(current_values, value);
-  for (auto &new_field : values) {
-    bool found = false;
-    for (auto &current_field : current_values) {
-      if (current_field.first == new_field.first) {
-        found = true;
-        current_field.second = new_field.second;
-        break;
-      }
-    }
-    if (found == false) {
-      break;
-    }
-  }
-  value.clear();
-  SerializeRow(current_values, value);
-  s = neopmkv_->put(read_key, value);
-
   return Status::kOK;
 }
 
