@@ -18,6 +18,7 @@ endif( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 
 find_package(PkgConfig REQUIRED)
 find_package(fmt REQUIRED)
+find_package(TBB REQUIRED)
 pkg_check_modules(LIBPMEMKV REQUIRED libpmemkv)
 pkg_check_modules(LIBPMEMOBJ REQUIRED libpmemobj)
 pkg_check_modules(LIBPMEM REQUIRED libpmem)
@@ -110,6 +111,7 @@ target_link_libraries(${PROJECT_NAME}
   dl
   fmt::fmt
   profiler
+  TBB::tbb
   )
 
 
@@ -149,6 +151,7 @@ if(BUILD_TESTS)
         z
         dl
         fmt::fmt
+        TBB::tbb
         )
       add_test(NAME ${testname} COMMAND ${testname})
     ENDFOREACH(testsourcefile ${TEST_FILE})

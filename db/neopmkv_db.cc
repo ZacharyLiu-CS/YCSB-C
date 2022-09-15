@@ -49,7 +49,11 @@ Status NEOPMKV::Read(const std::string &table, const std::string &key,
     no_found_++;
     return Status::kErrorNoData;
   }
-
+  // if (fields != nullptr) {
+  //   DeserializeRowFilter(result, value, *fields);
+  // } else {
+  //   DeserializeRow(result, value);
+  // }
   return Status::kOK;
 }
 
@@ -61,6 +65,15 @@ Status NEOPMKV::Scan(const std::string &table, const std::string &key, int len,
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
   uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   neopmkv_->scan(read_key, read_value, len);
+  for (auto &v : read_value) {
+    result.push_back(std::vector<KVPair>());
+    std::vector<KVPair> &values = result.back();
+    if (fields != nullptr) {
+      DeserializeRowFilter(values, v, *fields);
+    } else {
+      DeserializeRow(values, v);
+    }
+  }
   return Status::kOK;
 }
 
@@ -80,6 +93,7 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
 
+  std::string value;
   auto s = neopmkv_->update(read_key, values);
   if (s == false) {
     no_found_++;
