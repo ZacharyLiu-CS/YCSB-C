@@ -10,6 +10,7 @@
 #include "config_reader.h"
 #include "core/core_workload.h"
 #include "db.h"
+#include <chrono>
 
 #define LOGOUT(msg)                                                            \
   do {                                                                         \
@@ -45,7 +46,12 @@ Status UTree::Read(const std::string &table, const std::string &key,
                    std::vector<KVPair> &result) {
   char *value_ptr = nullptr;
   int64_t key_content = CoreWorkload::GetIntFromKey(key);
+
+  auto t0 = Time::now();
   value_ptr = bt_->search(key_content);
+  auto t1 = Time::now();
+  index_read_count_.fetch_add(1);
+  index_read_latency_sum_.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(t1-t0).count());
 
   if (value_ptr == nullptr) {
     no_found_++;
@@ -53,7 +59,13 @@ Status UTree::Read(const std::string &table, const std::string &key,
   }
 
   std::string value;
+  auto t2 = Time::now();
   engine_ptr_->read((NKV::PmemAddress)value_ptr, value);
+  auto t3 = Time::now();
+  pmem_read_count_.fetch_add(1);
+  pmem_read_latency_sum_.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(t3-t2).count());
+
+
   if (fields != nullptr) {
     DeserializeRowFilter(result, value, *fields);
   } else {
@@ -135,6 +147,8 @@ void UTree::printStats() {
 }
 
 UTree::~UTree() {
+  std::cout<< "Read index count: " << index_read_count_.load() << " Avarage latency (nanoseconds): " << index_read_latency_sum_.load()/index_read_count_.load() << std::endl;
+  std::cout<< "Read pmem count: " << pmem_read_count_.load() << " Avarage latency (nanoseconds): " << pmem_read_latency_sum_.load()/pmem_read_count_.load() << std::endl;
   printStats();
   delete bt_;
   delete engine_ptr_;

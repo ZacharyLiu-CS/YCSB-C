@@ -21,14 +21,14 @@ pmemkv:
   db_size: "32GB"
   engine_type: "radix"
 fastfair:
-  db_size: "32GB"
+  db_size: "64GB"
 listdb:
   pool_size: "64MB"
 utree:
-  db_size: "32GB"
+  db_size: "64GB"
 neopmkv:
-  db_size: "32GB"
+  db_size: "64GB"
   chunk_size: "128MB"
-  enable_pbrb: false
-  async_pbrb: false
-  max_page_num: 2621440
+  enable_pbrb: true
+  async_pbrb: true
+  max_page_num: 1310720

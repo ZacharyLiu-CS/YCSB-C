@@ -35,7 +35,6 @@ option(ENABLE_NEOPMKV_STATISTICS "Enable neopmkv statistics" ON)
 
 if(ENABLE_NEOPMKV_STATISTICS)
   message("Enable neopmkv statistics!")
-  add_compile_definitions(ENABLE_BREAKDOWN)
   add_compile_definitions(ENABLE_STATISTICS)
 endif(ENABLE_NEOPMKV_STATISTICS)
 

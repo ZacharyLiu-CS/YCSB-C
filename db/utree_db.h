@@ -8,6 +8,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -54,6 +55,14 @@ class UTree : public DB {
   private:
   ::btree *bt_;
   std::atomic<unsigned> no_found_;
+
+  typedef std::chrono::high_resolution_clock Time;
+  std::atomic<uint64_t> index_read_count_{0};
+  std::atomic<uint64_t> index_read_latency_sum_{0};
+
+  std::atomic<uint64_t> pmem_read_count_{0};
+  std::atomic<uint64_t> pmem_read_latency_sum_{0};
+
   NKV::PmemEngine * engine_ptr_;
   NKV::PmemEngineConfig engine_config_;
 

@@ -38,7 +38,7 @@ public:
   virtual uint64_t CreateSchema(std::string schema_name = "T0S0",
                                 size_t field_count = 10,
                                 size_t field_len = 100) {
-    return 0;
+    return schema_name[3] - '0';
   }
   /// Clears any state for accessing this DB.
   /// Called once per DB client (thread); there is a single DB instance

@@ -12,6 +12,7 @@ workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
 
+insertstart=60000000
 readproportion=0.5
 updateproportion=0
 scanproportion=0
