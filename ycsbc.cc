@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cstring>
 #include <future>
+#include <thread>
 #ifdef ENABLE_GPERF
 #include <gperftools/profiler.h>
 #endif
@@ -39,13 +40,20 @@ int DelegateClient(shared_ptr<ycsbc::DB> db, ycsbc::CoreWorkload *wl,
                    shared_ptr<utils::Histogram> histogram) {
   utils::Timer<utils::t_microseconds> timer;
   ycsbc::Client client(db, *wl);
-  if (wl->GetTypeId() == UINT64_MAX) {
-    auto [field_count, field_len] = wl->GetValueStructure();
-    auto schema_id =
-        db->CreateSchema(wl->GetWorkloadType(), field_count, field_len);
-    std::cout << "we got schema id: " << schema_id << std::endl;
-    wl->InitializeTypeId(schema_id);
+  while (wl->GetTypeId() == UINT64_MAX) {
+    if (wl->getCreateSchemaRight() == true) {
+      auto [field_count, field_len] = wl->GetValueStructure();
+      auto schema_id =
+          db->CreateSchema(wl->GetWorkloadType(), field_count, field_len);
+      std::cout << "we got schema id: " << schema_id
+                << " field count: " << field_count
+                << " field len: " << field_len << std::endl;
+      wl->InitializeTypeId(schema_id);
+    } else {
+      std::this_thread::yield();
+    }
   }
+  std::cout << "Workload Type: " << wl->GetWorkloadType() << std::endl;
   int oks = 0;
   for (int i = 0; i < num_ops; ++i) {
     timer.Start();
@@ -57,6 +65,7 @@ int DelegateClient(shared_ptr<ycsbc::DB> db, ycsbc::CoreWorkload *wl,
     double duration = timer.End();
     histogram->Add_Fast(duration);
   }
+  std::cout << "Load or Transaction end : " << oks << std::endl;
   return oks;
 }
 
@@ -73,7 +82,7 @@ int main(const int argc, const char *argv[]) {
   ycsbc::MixedWorkload mixed_workload;
   mixed_workload.Init(props, num_threads);
 
-  vector<future<int>> actual_ops;
+  vector<future<int>> actual_load_ops;
   vector<shared_ptr<utils::Histogram>> histogram_list;
   utils::Timer<utils::t_microseconds> timer;
 
@@ -94,14 +103,14 @@ int main(const int argc, const char *argv[]) {
       auto core_workload = mixed_workload.GetNext();
       int thread_ops =
           core_workload->GetRecordCount() / core_workload->GetThreadCount();
-      actual_ops.emplace_back(async(launch::async, DelegateClient, db,
+      actual_load_ops.emplace_back(async(launch::async, DelegateClient, db,
                                     core_workload, thread_ops, true,
                                     histogram_tmp));
       total_ops += thread_ops;
     }
     assert((int)actual_ops.size() == num_threads);
 
-    for (auto &n : actual_ops) {
+    for (auto &n : actual_load_ops) {
       assert(n.valid());
       sum += n.get();
     }
@@ -128,7 +137,8 @@ int main(const int argc, const char *argv[]) {
   }
 
   // Peforms transactions
-  actual_ops.clear();
+  vector<future<int>> actual_transaction_ops;
+  actual_transaction_ops.clear();
   histogram_list.clear();
   mixed_workload.Reset();
   total_ops = 0;
@@ -146,7 +156,7 @@ int main(const int argc, const char *argv[]) {
     auto core_workload = mixed_workload.GetNext();
     int thread_ops =
         core_workload->GetOperationCount() / core_workload->GetThreadCount();
-    actual_ops.emplace_back(async(launch::async, DelegateClient, db,
+    actual_transaction_ops.emplace_back(async(launch::async, DelegateClient, db,
                                   core_workload, thread_ops, false,
                                   histogram_tmp));
     total_ops += thread_ops;
@@ -154,7 +164,7 @@ int main(const int argc, const char *argv[]) {
   assert((int)actual_ops.size() == num_threads);
 
   sum = 0;
-  for (auto &n : actual_ops) {
+  for (auto &n : actual_transaction_ops) {
     assert(n.valid());
     sum += n.get();
   }

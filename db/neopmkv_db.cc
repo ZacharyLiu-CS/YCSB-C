@@ -28,9 +28,9 @@ NEOPMKV::NEOPMKV(const char *dbfilename) : no_found_(0) {
       static_cast<neopmkv_config *>(config_reader.get_config("neopmkv").get());
 
   if (neopmkv_ == nullptr) {
-    neopmkv_ =
-        new NKV::NeoPMKV(dbfilename, nc->chunk_size_, nc->db_size_,
-                         nc->enable_pbrb_, nc->async_pbrb_, nc->max_page_num_);
+    neopmkv_ = new NKV::NeoPMKV(dbfilename, nc->chunk_size_, nc->db_size_,
+                                nc->enable_pbrb_, nc->async_pbrb_, false,
+                                nc->max_page_num_);
   }
   if (neopmkv_ == nullptr) {
     LOGOUT("init neopmkv failed!");

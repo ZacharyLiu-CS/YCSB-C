@@ -31,4 +31,4 @@ neopmkv:
   chunk_size: "128MB"
   enable_pbrb: true
   async_pbrb: true
-  max_page_num: 1310720
+  max_page_num: 6621440

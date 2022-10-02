@@ -137,7 +137,7 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
     op_chooser_.AddValue(READMODIFYWRITE, readmodifywrite_proportion);
   }
 
-  insert_key_sequence_.Set(record_count_);
+  insert_key_sequence_.Set(insert_start + record_count_);
 
   if (request_dist == "uniform") {
     key_chooser_ =
@@ -166,6 +166,8 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
     scan_len_chooser_ = new UniformGenerator(1, max_scan_len);
   } else if (scan_len_dist == "zipfian") {
     scan_len_chooser_ = new ZipfianGenerator(1, max_scan_len);
+  } else if (scan_len_dist == "const") {
+    scan_len_chooser_ = new ConstGenerator(max_scan_len);
   } else {
     throw utils::Exception("Distribution not allowed for scan length: " +
                            scan_len_dist);

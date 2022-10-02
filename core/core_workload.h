@@ -15,6 +15,7 @@
 #include "generator.h"
 #include "properties.h"
 #include "utils.h"
+#include <atomic>
 #include <string>
 #include <vector>
 
@@ -159,22 +160,23 @@ public:
   void SetWorkloadType(const std::string &workload_type) {
     workload_type_ = workload_type;
   }
-  std::string GetWorkloadType(){
-    return workload_type_;
-  }
-  std::pair<size_t, size_t> GetValueStructure(){
+  std::string GetWorkloadType() { return workload_type_; }
+  std::pair<size_t, size_t> GetValueStructure() {
     return {field_count_, field_len_generator_->Next()};
   }
   void InitializeTypeId(uint64_t new_id) {
-    if (type_id_ == UINT64_MAX) {
-      type_id_ = new_id;
-      workload_type_[3] = std::to_string(type_id_%10)[0];
+    uint64_t now_type_id = type_id_.load(std::memory_order_acquire);
+    if (now_type_id == UINT64_MAX) {
+      workload_type_[3] = std::to_string(new_id % 10)[0];
+      type_id_.store(new_id, std::memory_order_release);
     }
   }
-  uint64_t GetTypeId(){
-    return type_id_;
+  uint64_t GetTypeId() { return type_id_.load(std::memory_order_acquire); }
+  bool getCreateSchemaRight() {
+    bool origin_val = true;
+    bool create_val = false;
+    return createSchemaRight_.compare_exchange_weak(origin_val, create_val);
   }
-
   static inline uint64_t GetIntFromKey(const std::string &key) {
     return std::stoull(key.substr(4, -1));
   }
@@ -222,7 +224,8 @@ protected:
   size_t thread_count_ = 1;
   int zero_padding_ = 24;
   std::string workload_type_ = "T0S0";
-  uint64_t type_id_ = UINT64_MAX;
+  std::atomic<uint64_t> type_id_{UINT64_MAX};
+  std::atomic<bool> createSchemaRight_{true};
 };
 
 inline std::string CoreWorkload::NextSequenceKey() {

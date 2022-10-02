@@ -62,9 +62,9 @@ public:
       return &single_workload;
     }
     int subworkload_sum = subworkload_list.size();
+    int this_id = last_id.fetch_add(1);
     SubWorkloadType type =
-        subworkload_ratio_table[last_id.load() % subworkload_sum];
-    last_id.fetch_add(1);
+        subworkload_ratio_table[this_id % subworkload_sum];
     return subworkload_list[type];
   }
   std::string ToString() {

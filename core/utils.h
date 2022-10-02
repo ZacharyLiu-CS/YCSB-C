@@ -22,6 +22,9 @@ const uint64_t kFNVPrime64 = 1099511628211;
 static thread_local std::mt19937 gen(0);
 static thread_local std::uniform_int_distribution<int> randomchar(0, 94);
 
+static thread_local std::default_random_engine generator;
+static thread_local std::uniform_real_distribution<double> uniform(0.0, 1.0);
+
 inline uint64_t FNVHash64(uint64_t val) {
   uint64_t hash = kFNVOffsetBasis64;
 
@@ -37,26 +40,21 @@ inline uint64_t FNVHash64(uint64_t val) {
 
 inline uint64_t Hash(uint64_t val) { return FNVHash64(val); }
 
-inline double RandomDouble(double min = 0.0, double max = 1.0) {
-  static std::default_random_engine generator;
-  static std::uniform_real_distribution<double> uniform(min, max);
+inline double RandomDouble() {
   return uniform(generator);
 }
 
 ///
 /// Returns an ASCII code that can be printed to desplay
 ///
-inline char RandomPrintChar() {
-  return randomchar(gen) + 33;
-}
+inline char RandomPrintChar() { return randomchar(gen) + 33; }
 
 class Exception : public std::exception {
- public:
-  Exception(const std::string &message) : message_(message) { }
-  const char* what() const noexcept {
-    return message_.c_str();
-  }
- private:
+public:
+  Exception(const std::string &message) : message_(message) {}
+  const char *what() const noexcept { return message_.c_str(); }
+
+private:
   std::string message_;
 };
 
@@ -72,11 +70,15 @@ inline bool StrToBool(std::string str) {
 }
 
 inline std::string Trim(const std::string &str) {
-  auto front = std::find_if_not(str.begin(), str.end(), [](int c){ return std::isspace(c); });
-  return std::string(front, std::find_if_not(str.rbegin(), std::string::const_reverse_iterator(front),
-      [](int c){ return std::isspace(c); }).base());
+  auto front = std::find_if_not(str.begin(), str.end(),
+                                [](int c) { return std::isspace(c); });
+  return std::string(
+      front,
+      std::find_if_not(str.rbegin(), std::string::const_reverse_iterator(front),
+                       [](int c) { return std::isspace(c); })
+          .base());
 }
 
-} // utils
+} // namespace utils
 
 #endif // YCSB_C_UTILS_H_

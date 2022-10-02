@@ -23,3 +23,4 @@ requestdistribution=zipfian
 maxscanlength=100
 fieldcount=10
 fieldlength=100
+scanlengthdistribution=uniform
