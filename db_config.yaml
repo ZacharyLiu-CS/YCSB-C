@@ -15,10 +15,10 @@ pmrocksdb:
   block_cache_size: "128MB" # e.g. "100MB" or "10GB"
   memtable_size: "128MB" # e.g. "64MB"
   sst_file_size: "32MB"
-  db_size: "32GB"
+  db_size: "64GB"
 pmemkv:
   create_if_missing: true
-  db_size: "32GB"
+  db_size: "200GB"
   engine_type: "radix"
 fastfair:
   db_size: "64GB"
@@ -27,8 +27,14 @@ listdb:
 utree:
   db_size: "64GB"
 neopmkv:
-  db_size: "64GB"
+  db_size: "100GB"
   chunk_size: "128MB"
   enable_pbrb: true
   async_pbrb: true
-  max_page_num: 6621440
+  max_page_num: 128000
+  hit_threshold: 0.3
+  async_gc: false
+  rw_micro: 2000
+  gc_threshold: 0.7
+  gc_interval_micro: 2000
+

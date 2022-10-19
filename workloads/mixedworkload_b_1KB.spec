@@ -12,7 +12,7 @@ workloada.spec=1
 a_recordcount=2500000
 a_operationcount=2500000
 
-workloadb.spec=0
+workloadb.spec=1
 b_recordcount=2500000
 b_operationcount=2500000
 
@@ -28,7 +28,7 @@ workloade.spec=1
 e_recordcount=2500000
 e_operationcount=2500000
 
-workloadf.spec=1
+workloadf.spec=0
 f_recordcount=2500000
 f_operationcount=2500000
 

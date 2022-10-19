@@ -221,7 +221,7 @@ protected:
   bool ordered_inserts_ = false;
   size_t record_count_ = 0;
   size_t op_count_ = 0;
-  size_t thread_count_ = 1;
+  size_t thread_count_ = 0;
   int zero_padding_ = 24;
   std::string workload_type_ = "T0S0";
   std::atomic<uint64_t> type_id_{UINT64_MAX};

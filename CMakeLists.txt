@@ -112,6 +112,7 @@ target_link_libraries(${PROJECT_NAME}
   fmt::fmt
   profiler
   TBB::tbb
+  tcmalloc
   )
 
 
@@ -152,6 +153,7 @@ if(BUILD_TESTS)
         dl
         fmt::fmt
         TBB::tbb
+        tcmalloc
         )
       add_test(NAME ${testname} COMMAND ${testname})
     ENDFOREACH(testsourcefile ${TEST_FILE})

@@ -72,21 +72,21 @@ Status FastFair::Read(const std::string &table, const std::string &key,
 Status FastFair::Scan(const std::string &table, const std::string &key, int len,
                       const std::vector<std::string> *fields,
                       std::vector<std::vector<KVPair>> &result) {
-  // int64_t start_key = CoreWorkload::GetIntFromKey(key);
-  // uint64_t valueptr_list[len];
-  // // std::cout << "Scan start key: " << start_key << std::endl;
-  // D_RW(bt_)->btree_search_range(start_key, INT32_MAX, valueptr_list, len);
-  // for (auto i = 0; i < len; i++) {
-  //   std::string value;
-  //   if (valueptr_list[i] == (unsigned long)NULL) {
-  //     continue;
-  //   }
-  //   value.clear();
-  //   engine_ptr_->read((NKV::PmemAddress)valueptr_list[i], value);
-  //   // std::cout << "Key: " << valueptr_list[i] << " Value: " << value << std::endl;
-  //   result.push_back(std::vector<KVPair>());
-  //   std::vector<KVPair> &values = result.back();
-  // }
+  int64_t start_key = CoreWorkload::GetIntFromKey(key);
+  uint64_t valueptr_list[len];
+  // std::cout << "Scan start key: " << start_key << std::endl;
+  D_RW(bt_)->btree_search_range(start_key, INT32_MAX, valueptr_list, len);
+  for (auto i = 0; i < len; i++) {
+    std::string value;
+    if (valueptr_list[i] == (unsigned long)NULL) {
+      continue;
+    }
+    value.clear();
+    engine_ptr_->read((NKV::PmemAddress)valueptr_list[i], value);
+    // std::cout << "Key: " << valueptr_list[i] << " Value: " << value << std::endl;
+    result.push_back(std::vector<KVPair>());
+    std::vector<KVPair> &values = result.back();
+  }
   return Status::kOK;
 }
 

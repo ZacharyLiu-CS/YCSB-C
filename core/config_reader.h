@@ -83,12 +83,18 @@ struct utree_config : public config_templates {
   uint64_t db_size_;
 };
 
+
 struct neopmkv_config : public config_templates {
   uint64_t chunk_size_;
   uint64_t db_size_;
   bool enable_pbrb_;
   bool async_pbrb_;
+  bool async_gc_;
   uint64_t max_page_num_;
+  uint64_t rw_micro_;
+  double gc_threshold_;
+  uint64_t gc_interval_micro_;
+  double hit_threshold_;
 };
 
 } // namespace ycsbc
@@ -247,7 +253,12 @@ template <> struct convert<ycsbc::utree_config> {
 //   uint64_t db_size_;
 //   bool enable_pbrb_;
 //   bool async_pbrb_;
+//   bool async_gc_;
 //   uint64_t max_page_num_;
+//   uint64_t rw_micro_;
+//   double gc_threshold_;
+//   uint64_t gc_interval_micro_;
+//   double hit_threshold_;
 // };
 template <> struct convert<ycsbc::neopmkv_config> {
   static YAML::Node encode(const ycsbc::neopmkv_config &nc) {
@@ -261,7 +272,12 @@ template <> struct convert<ycsbc::neopmkv_config> {
     node.push_back(db_size);
     node.push_back(nc.enable_pbrb_);
     node.push_back(nc.async_pbrb_);
+    node.push_back(nc.async_gc_);
     node.push_back(nc.max_page_num_);
+    node.push_back(nc.rw_micro_);
+    node.push_back(nc.gc_threshold_);
+    node.push_back(nc.gc_interval_micro_);
+    node.push_back(nc.hit_threshold_);
     return node;
   }
 
@@ -275,7 +291,12 @@ template <> struct convert<ycsbc::neopmkv_config> {
     nc.db_size_ = ycsbc::convert_to_base(db_size);
     nc.enable_pbrb_ = node["enable_pbrb"].as<bool>();
     nc.async_pbrb_ = node["async_pbrb"].as<bool>();
+    nc.async_gc_ = node["async_gc"].as<bool>();
     nc.max_page_num_ = node["max_page_num"].as<uint64_t>();
+    nc.rw_micro_ = node["rw_micro"].as<uint64_t>();
+    nc.gc_threshold_ = node["gc_threshold"].as<double>();
+    nc.gc_interval_micro_ = node["gc_interval_micro"].as<uint64_t>();
+    nc.hit_threshold_ = node["hit_threshold"].as<double>();
     return true;
   }
 };

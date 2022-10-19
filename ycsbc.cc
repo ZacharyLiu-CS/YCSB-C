@@ -35,11 +35,11 @@ void UsageMessage(const char *command);
 bool StrStartWith(const char *str, const char *pre);
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 
-int DelegateClient(shared_ptr<ycsbc::DB> db, ycsbc::CoreWorkload *wl,
+int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl,
                    const int num_ops, bool is_loading,
                    shared_ptr<utils::Histogram> histogram) {
   utils::Timer<utils::t_microseconds> timer;
-  ycsbc::Client client(db, *wl);
+  ycsbc::Client client(db, wl);
   while (wl->GetTypeId() == UINT64_MAX) {
     if (wl->getCreateSchemaRight() == true) {
       auto [field_count, field_len] = wl->GetValueStructure();
@@ -84,7 +84,6 @@ int main(const int argc, const char *argv[]) {
 
   vector<future<int>> actual_load_ops;
   vector<shared_ptr<utils::Histogram>> histogram_list;
-  utils::Timer<utils::t_microseconds> timer;
 
   int total_ops = 0;
   int sum = 0;
@@ -92,7 +91,7 @@ int main(const int argc, const char *argv[]) {
     // Loads data
     db->Init();
     // calculate the total time usage
-    timer.Start();
+
 #ifdef ENABLE_GPERF
     ProfilerStart("load_ycsbc_phase.prof");
 #endif
@@ -103,19 +102,18 @@ int main(const int argc, const char *argv[]) {
       auto core_workload = mixed_workload.GetNext();
       int thread_ops =
           core_workload->GetRecordCount() / core_workload->GetThreadCount();
-      actual_load_ops.emplace_back(async(launch::async, DelegateClient, db,
-                                    core_workload, thread_ops, true,
-                                    histogram_tmp));
+      actual_load_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
+                                         core_workload, thread_ops, true,
+                                         histogram_tmp));
       total_ops += thread_ops;
     }
-    assert((int)actual_ops.size() == num_threads);
+    assert((int)actual_load_ops.size() == num_threads);
 
     for (auto &n : actual_load_ops) {
       assert(n.valid());
       sum += n.get();
     }
 
-    double duration = timer.End();
     db->Close();
 
 #ifdef ENABLE_GPERF
@@ -126,11 +124,13 @@ int main(const int argc, const char *argv[]) {
     for (auto &h : histogram_list) {
       histogram.Merge(*h);
     }
+    double duration =
+        histogram.Sum() / (num_threads * histogram.GetRecordUnit());
+
     cerr << "# Loading records:\t" << sum << endl;
     cerr << "Load Perf: " << props["dbname"] << '\t' << file_name << '\t'
          << num_threads << '\t';
-    cerr << total_ops / (duration / histogram.GetRecordUnit()) << " OPS"
-         << endl;
+    cerr << total_ops / duration << " OPS" << endl;
     cerr << histogram.ToString() << endl;
   } else {
     cerr << "# Skipped load records!" << endl;
@@ -148,7 +148,7 @@ int main(const int argc, const char *argv[]) {
 #ifdef ENABLE_GPERF
   ProfilerStart("run_ycsbc_phase.prof");
 #endif
-  timer.Start();
+
   for (int i = 0; i < num_threads; ++i) {
     auto histogram_tmp =
         make_shared<utils::Histogram>(utils::RecordUnit::h_microseconds);
@@ -156,19 +156,18 @@ int main(const int argc, const char *argv[]) {
     auto core_workload = mixed_workload.GetNext();
     int thread_ops =
         core_workload->GetOperationCount() / core_workload->GetThreadCount();
-    actual_transaction_ops.emplace_back(async(launch::async, DelegateClient, db,
-                                  core_workload, thread_ops, false,
-                                  histogram_tmp));
+    actual_transaction_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
+                                              core_workload, thread_ops, false,
+                                              histogram_tmp));
     total_ops += thread_ops;
   }
-  assert((int)actual_ops.size() == num_threads);
+  assert((int)actual_transaction_ops.size() == num_threads);
 
   sum = 0;
   for (auto &n : actual_transaction_ops) {
     assert(n.valid());
     sum += n.get();
   }
-  auto duration = timer.End();
 
 #ifdef ENABLE_GPERF
   ProfilerStop();
@@ -179,11 +178,11 @@ int main(const int argc, const char *argv[]) {
   }
 
   db->Close();
-
+  double duration = histogram.Sum() / (num_threads * histogram.GetRecordUnit());
   cerr << "# Transaction count:\t" << total_ops << endl;
   cerr << "Run Perf: " << props["dbname"] << '\t' << file_name << '\t'
        << num_threads << '\t';
-  cerr << total_ops / (duration / histogram.GetRecordUnit()) << " OPS" << endl;
+  cerr << total_ops / duration << " OPS" << endl;
   cerr << histogram.ToString() << endl;
 }
 

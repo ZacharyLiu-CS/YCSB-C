@@ -59,6 +59,7 @@ void MixedWorkload::Init(utils::Properties &props, size_t thread_count) {
         props.GetProperty(subworkload_props_name, SUBWORKLOAD_UNIT_DEFAULT);
 
     uint32_t workload_unit_count = std::stoi(workload_unit);
+    // std::cout << "workload unit [" << subworkload_props_name<<"] : " << workload_unit_count << std::endl;
     // read the sub workload property file
     if (workload_unit_count != 0) {
       CoreWorkload *sub_workload = new CoreWorkload();
@@ -93,6 +94,7 @@ void MixedWorkload::Init(utils::Properties &props, size_t thread_count) {
     for (uint32_t count = 0; count < workload_unit_count; count++)
       subworkload_ratio_table.push_back(SubWorkloadType(i));
   }
+
   for (auto i = 0; i < thread_count; i++) {
     auto core_workload = this->GetNext();
     core_workload->AddThreadCount(1);

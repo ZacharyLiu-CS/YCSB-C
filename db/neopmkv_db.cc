@@ -29,8 +29,9 @@ NEOPMKV::NEOPMKV(const char *dbfilename) : no_found_(0) {
 
   if (neopmkv_ == nullptr) {
     neopmkv_ = new NKV::NeoPMKV(dbfilename, nc->chunk_size_, nc->db_size_,
-                                nc->enable_pbrb_, nc->async_pbrb_, false,
-                                nc->max_page_num_);
+                                nc->enable_pbrb_, nc->async_pbrb_, nc->async_gc_,
+                                nc->max_page_num_, nc->rw_micro_, nc->gc_threshold_,
+                                nc->gc_interval_micro_, nc->hit_threshold_);
   }
   if (neopmkv_ == nullptr) {
     LOGOUT("init neopmkv failed!");
@@ -44,7 +45,16 @@ Status NEOPMKV::Read(const std::string &table, const std::string &key,
   NKV::SchemaId schemaId = key[3] - '0';
 
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
-  auto s = neopmkv_->get(read_key, value);
+
+
+  std::vector<uint32_t> fields_id;
+  if (fields != nullptr) {
+    for (auto &i : *fields) {
+      fields_id.push_back(GetIntFromField(i) * 2 + 1);
+    }
+  }
+  auto s = neopmkv_->get(read_key, value, fields_id);
+ 
   if (s == false) {
     no_found_++;
     return Status::kErrorNoData;
@@ -64,16 +74,22 @@ Status NEOPMKV::Scan(const std::string &table, const std::string &key, int len,
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
   uint64_t key_content = CoreWorkload::GetIntFromKey(key);
-  neopmkv_->scan(read_key, read_value, len);
-  for (auto &v : read_value) {
-    result.push_back(std::vector<KVPair>());
-    std::vector<KVPair> &values = result.back();
-    if (fields != nullptr) {
-      DeserializeRowFilter(values, v, *fields);
-    } else {
-      DeserializeRow(values, v);
+  std::vector<uint32_t> fields_id;
+  if (fields != nullptr) {
+    for (auto &i : *fields) {
+      fields_id.push_back(GetIntFromField(i) * 2 + 1);
     }
   }
+  neopmkv_->scan(read_key, read_value, len, fields_id);
+  // for (auto &v : read_value) {
+  //   result.push_back(std::vector<KVPair>());
+  //   std::vector<KVPair> &values = result.back();
+  //   if (fields != nullptr) {
+  //     DeserializeRowFilter(values, v, *fields);
+  //   } else {
+  //     DeserializeRow(values, v);
+  //   }
+  // }
   return Status::kOK;
 }
 
@@ -114,6 +130,7 @@ Status NEOPMKV::Delete(const std::string &table, const std::string &key) {
 void NEOPMKV::printStats() {
   std::cout << "print neopmkv statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
+
 }
 
 NEOPMKV::~NEOPMKV() {

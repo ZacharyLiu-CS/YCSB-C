@@ -57,6 +57,7 @@ namespace utils {
       std::string ToString() const;
 
     public:
+      double Sum() const;
       double Median() const;
       double Percentile(double p) const;
       double Average() const;

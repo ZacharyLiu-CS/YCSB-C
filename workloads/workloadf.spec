@@ -11,14 +11,12 @@ operationcount=10000000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
-
-insertstart=60000000
-readproportion=0.5
+insertstart=50000000
+readproportion=1.0
 updateproportion=0
 scanproportion=0
 insertproportion=0
-readmodifywriteproportion=0.5
 fieldcount=10
-fieldlength=100
-requestdistribution=zipfian
+fieldlength=84
+requestdistribution=uniform
 

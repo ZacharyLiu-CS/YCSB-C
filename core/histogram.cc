@@ -6,7 +6,7 @@
 
 namespace utils {
 
-  const double Histogram::kBucketLimit[kNumBuckets] = {
+const double Histogram::kBucketLimit[kNumBuckets] = {
     1,
     2,
     3,
@@ -161,149 +161,155 @@ namespace utils {
     8000000000.0,
     9000000000.0,
     1e200,
-  };
+};
 
+void Histogram::Clear() {
+  min_ = kBucketLimit[kNumBuckets - 1];
+  max_ = 0;
+  num_ = 0;
+  sum_ = 0;
+  sum_squares_ = 0;
+  for (int i = 0; i < kNumBuckets; i++) {
+    buckets_[i] = 0;
+  }
+}
 
-  void Histogram::Clear() {
-    min_ = kBucketLimit[kNumBuckets - 1];
-    max_ = 0;
-    num_ = 0;
-    sum_ = 0;
-    sum_squares_ = 0;
-    for (int i = 0; i < kNumBuckets; i++) {
-      buckets_[i] = 0;
+void Histogram::Add(double value) {
+  // Linear search is fast enough for our usage in db_bench
+  int b = 0;
+  while (b < kNumBuckets - 1 && kBucketLimit[b] <= value) {
+    b++;
+  }
+  buckets_[b] += 1.0;
+  if (min_ > value)
+    min_ = value;
+  if (max_ < value)
+    max_ = value;
+  num_++;
+  sum_ += value;
+  sum_squares_ += (value * value);
+}
+
+void Histogram::Add_Fast(double value) {
+  // locate posistion by function distribution
+  int cal_pos = 0;
+  if (value >= 0.0 && value < 10.0) {
+    cal_pos = static_cast<int>(value);
+  } else {
+    double b = value;
+    while (b >= 100) {
+      b = b / 10;
+      cal_pos += 16;
+    }
+    if (b >= 10 && b < 20)
+      cal_pos += 10 + (b - 10) / 2;
+    else if (b >= 20 && b < 50)
+      cal_pos += 15 + (b - 20) / 5;
+    else if (b >= 50 && b < 100)
+      cal_pos += 21 + (b - 50) / 10;
+  }
+  if (cal_pos >= kNumBuckets) {
+    cal_pos = kNumBuckets - 1;
+  }
+
+  buckets_[cal_pos] += 1.0;
+  if (min_ > value)
+    min_ = value;
+  if (max_ < value)
+    max_ = value;
+  num_++;
+  sum_ += value;
+  sum_squares_ += (value * value);
+}
+
+void Histogram::Merge(const Histogram &other) {
+  if (other.min_ < min_)
+    min_ = other.min_;
+  if (other.max_ > max_)
+    max_ = other.max_;
+  num_ += other.num_;
+  sum_ += other.sum_;
+  sum_squares_ += other.sum_squares_;
+  for (int b = 0; b < kNumBuckets; b++) {
+    buckets_[b] += other.buckets_[b];
+  }
+}
+double Histogram::Sum() const { return sum_; }
+
+double Histogram::Median() const { return Percentile(50.0); }
+
+double Histogram::Percentile(double p) const {
+  double threshold = num_ * (p / 100.0);
+  double sum = 0;
+  for (int b = 0; b < kNumBuckets; b++) {
+    sum += buckets_[b];
+    if (sum >= threshold) {
+      // Scale linearly within this bucket
+      double left_point = (b == 0) ? 0 : kBucketLimit[b - 1];
+      double right_point = kBucketLimit[b];
+      double left_sum = sum - buckets_[b];
+      double right_sum = sum;
+      double pos = (threshold - left_sum) / (right_sum - left_sum);
+      double r = left_point + (right_point - left_point) * pos;
+      if (r < min_)
+        r = min_;
+      if (r > max_)
+        r = max_;
+      return r;
     }
   }
+  return max_;
+}
 
-  void Histogram::Add(double value) {
-    // Linear search is fast enough for our usage in db_bench
-    int b = 0;
-    while (b < kNumBuckets - 1 && kBucketLimit[b] <= value) {
-      b++;
-    }
-    buckets_[b] += 1.0;
-    if (min_ > value) min_ = value;
-    if (max_ < value) max_ = value;
-    num_++;
-    sum_ += value;
-    sum_squares_ += (value * value);
-  }
+double Histogram::Average() const {
+  if (num_ == 0.0)
+    return 0;
+  return sum_ / num_;
+}
 
-  void Histogram::Add_Fast(double value){
-    // locate posistion by function distribution
-    int cal_pos = 0;
-    if ( value >= 0.0 && value < 10.0 ){
-      cal_pos = static_cast<int>(value);
-    }else {
-      double b = value;
-      while ( b >= 100 ){
-        b = b / 10;
-        cal_pos += 16;
-      }
-      if (b >= 10 && b < 20)
-        cal_pos += 10 + (b-10)/2;
-      else if ( b >= 20 && b < 50)
-        cal_pos += 15 + (b-20)/5;
-      else if ( b >= 50 && b < 100 )
-        cal_pos += 21 + (b-50)/10;
-    }
-    if ( cal_pos >= kNumBuckets){
-      cal_pos = kNumBuckets -1;
-    }
+double Histogram::StandardDeviation() const {
+  if (num_ == 0.0)
+    return 0;
+  double variance = (sum_squares_ * num_ - sum_ * sum_) / (num_ * num_);
+  return sqrt(variance);
+}
 
-    buckets_[cal_pos] += 1.0;
-    if(min_ > value) min_ = value;
-    if(max_ < value) max_ = value;
-    num_++;
-    sum_ += value;
-    sum_squares_ += (value * value);
-  }
+int Histogram::GetRecordUnit() const { return record_unit_; }
 
+const char *Histogram::GetRecordUnitName() const { return record_unit_name_; }
 
-  void Histogram::Merge(const Histogram& other) {
-    if (other.min_ < min_) min_ = other.min_;
-    if (other.max_ > max_) max_ = other.max_;
-    num_ += other.num_;
-    sum_ += other.sum_;
-    sum_squares_ += other.sum_squares_;
-    for (int b = 0; b < kNumBuckets; b++) {
-      buckets_[b] += other.buckets_[b];
-    }
-  }
-
-  double Histogram::Median() const { return Percentile(50.0); }
-
-  double Histogram::Percentile(double p) const {
-    double threshold = num_ * (p / 100.0);
-    double sum = 0;
-    for (int b = 0; b < kNumBuckets; b++) {
-      sum += buckets_[b];
-      if (sum >= threshold) {
-        // Scale linearly within this bucket
-        double left_point = (b == 0) ? 0 : kBucketLimit[b - 1];
-        double right_point = kBucketLimit[b];
-        double left_sum = sum - buckets_[b];
-        double right_sum = sum;
-        double pos = (threshold - left_sum) / (right_sum - left_sum);
-        double r = left_point + (right_point - left_point) * pos;
-        if (r < min_) r = min_;
-        if (r > max_) r = max_;
-        return r;
-      }
-    }
-    return max_;
-  }
-
-  double Histogram::Average() const {
-    if (num_ == 0.0) return 0;
-    return sum_ / num_;
-  }
-
-  double Histogram::StandardDeviation() const {
-    if (num_ == 0.0) return 0;
-    double variance = (sum_squares_ * num_ - sum_ * sum_) / (num_ * num_);
-    return sqrt(variance);
-  }
-
-  int Histogram::GetRecordUnit() const{
-    return record_unit_;
-  }
-
-  const char* Histogram::GetRecordUnitName() const{
-    return record_unit_name_;
-  }
-
-  std::string Histogram::ToString() const {
-    std::string r;
-    char buf[200];
-    snprintf(buf, sizeof(buf), "Record unit : %s\n",GetRecordUnitName());
+std::string Histogram::ToString() const {
+  std::string r;
+  char buf[200];
+  snprintf(buf, sizeof(buf), "Record unit : %s\n", GetRecordUnitName());
+  r.append(buf);
+  snprintf(buf, sizeof(buf), "Count: %.0f  Average: %.4f  StdDev: %.2f\n", num_,
+           Average(), StandardDeviation());
+  r.append(buf);
+  snprintf(buf, sizeof(buf), "Sum: %.4Lf  Min: %.4f  Median: %.4f  Max: %.4f\n",
+           sum_, (num_ == 0.0 ? 0.0 : min_), Median(), max_);
+  r.append(buf);
+  r.append("------------------------------------------------------\n");
+  const double mult = 100.0 / num_;
+  double sum = 0;
+  for (int b = 0; b < kNumBuckets; b++) {
+    if (buckets_[b] <= 0.0)
+      continue;
+    sum += buckets_[b];
+    snprintf(buf, sizeof(buf), "[ %7.0f, %7.0f ) %7.0f %7.3f%% %7.3f%% ",
+             ((b == 0) ? 0.0 : kBucketLimit[b - 1]), // left
+             kBucketLimit[b],                        // right
+             buckets_[b],                            // count
+             mult * buckets_[b],                     // percentage
+             mult * sum);                            // cumulative percentage
     r.append(buf);
-    snprintf(buf, sizeof(buf), "Count: %.0f  Average: %.4f  StdDev: %.2f\n", num_,
-        Average(), StandardDeviation());
-    r.append(buf);
-    snprintf(buf, sizeof(buf), "Sum: %.4Lf  Min: %.4f  Median: %.4f  Max: %.4f\n",
-        sum_, (num_ == 0.0 ? 0.0 : min_), Median(), max_);
-    r.append(buf);
-    r.append("------------------------------------------------------\n");
-    const double mult = 100.0 / num_;
-    double sum = 0;
-    for (int b = 0; b < kNumBuckets; b++) {
-      if (buckets_[b] <= 0.0) continue;
-      sum += buckets_[b];
-      snprintf(buf, sizeof(buf), "[ %7.0f, %7.0f ) %7.0f %7.3f%% %7.3f%% ",
-          ((b == 0) ? 0.0 : kBucketLimit[b - 1]),  // left
-          kBucketLimit[b],                         // right
-          buckets_[b],                             // count
-          mult * buckets_[b],                      // percentage
-          mult * sum);                             // cumulative percentage
-      r.append(buf);
 
-      // Add hash marks based on percentage; 20 marks for 100%.
-      int marks = static_cast<int>(20 * (buckets_[b] / num_) + 0.5);
-      r.append(marks, '#');
-      r.push_back('\n');
-    }
-    return r;
+    // Add hash marks based on percentage; 20 marks for 100%.
+    int marks = static_cast<int>(20 * (buckets_[b] / num_) + 0.5);
+    r.append(marks, '#');
+    r.push_back('\n');
   }
+  return r;
+}
 
-}  // namespace leveldb
+} // namespace utils

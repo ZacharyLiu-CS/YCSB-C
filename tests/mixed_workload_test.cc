@@ -36,6 +36,23 @@ TEST(MixedWorkloadTest, MixedInitializationTest) {
 
   ASSERT_EQ(mixed_workload.ToString(), expected_output);
 }
+TEST(MixedWorkloadTest, MixedGenerateTest) {
+  std::string filename = "../workloads/mixedworkload_a_1KB.spec";
+  utils::Properties props;
+  std::ifstream input(filename);
+  props.Load(input);
+  props.SetProperty("propsfile", filename);
+  input.close();
+  ycsbc::MixedWorkload mixed_workload;
+  int thread_count = 4;
+  mixed_workload.Init(props, thread_count);
+  std::cout << mixed_workload.ToString() << std::endl;
+  std::string expected_output;
+  expected_output.append("Workload Mixed : workloada.spec;\t Thread Count : 1\n");
+  expected_output.append("Workload Mixed : workloadb.spec;\t Thread Count : 3\n");
+
+  ASSERT_EQ(mixed_workload.ToString(), expected_output);
+}
 
 TEST(MixedWorkloadTest, SingleInitializationTest) {
   std::string filename = "../workloads/workloada.spec";

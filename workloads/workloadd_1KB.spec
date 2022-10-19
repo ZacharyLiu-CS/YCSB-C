@@ -22,6 +22,6 @@ updateproportion=0
 scanproportion=0
 insertproportion=0.05
 fieldcount=10
-fieldlength=100
+fieldlength=84
 requestdistribution=latest
 

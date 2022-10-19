@@ -12,7 +12,7 @@
 # key, and then request a number of records; this works fine even for hashed insertion.
 
 recordcount=10000000
-operationcount=10000
+operationcount=100000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
@@ -26,7 +26,7 @@ requestdistribution=zipfian
 
 maxscanlength=100
 fieldcount=10
-fieldlength=100
+fieldlength=84
 scanlengthdistribution=uniform
 
 
