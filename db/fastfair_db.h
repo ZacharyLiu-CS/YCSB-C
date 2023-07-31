@@ -55,9 +55,17 @@ public:
 private:
   TOID(btree) bt_;
   PMEMobjpool *pop_ = nullptr;
-  std::atomic<unsigned> no_found_;
+  std::atomic<unsigned> no_found_{0};
+  std::atomic<unsigned> done_{0};
   NKV::PmemEngine *engine_ptr_;
   NKV::PmemEngineConfig engine_config_;
+  
+  typedef std::chrono::high_resolution_clock Time;
+  std::atomic<uint64_t> index_read_count_{0};
+  std::atomic<uint64_t> index_read_latency_sum_{0};
+
+  std::atomic<uint64_t> pmem_read_count_{0};
+  std::atomic<uint64_t> pmem_read_latency_sum_{0};
 
 }; // end of fastfair
 

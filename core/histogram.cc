@@ -237,6 +237,8 @@ void Histogram::Merge(const Histogram &other) {
 double Histogram::Sum() const { return sum_; }
 
 double Histogram::Median() const { return Percentile(50.0); }
+double Histogram::P99() const { return Percentile(99.0); }
+double Histogram::P95() const { return Percentile(95.0); }
 
 double Histogram::Percentile(double p) const {
   double threshold = num_ * (p / 100.0);
@@ -283,11 +285,11 @@ std::string Histogram::ToString() const {
   char buf[200];
   snprintf(buf, sizeof(buf), "Record unit : %s\n", GetRecordUnitName());
   r.append(buf);
-  snprintf(buf, sizeof(buf), "Count: %.0f  Average: %.4f  StdDev: %.2f\n", num_,
-           Average(), StandardDeviation());
+  snprintf(buf, sizeof(buf), "Count: %.0f  Average: %.4f  StdDev: %.2f P95: %.4f\n", num_,
+           Average(), StandardDeviation(), P95());
   r.append(buf);
-  snprintf(buf, sizeof(buf), "Sum: %.4Lf  Min: %.4f  Median: %.4f  Max: %.4f\n",
-           sum_, (num_ == 0.0 ? 0.0 : min_), Median(), max_);
+  snprintf(buf, sizeof(buf), "Sum: %.4Lf  Min: %.4f  Median: %.4f  Max: %.4f P99: %.4f\n",
+           sum_, (num_ == 0.0 ? 0.0 : min_), Median(), max_, P99());
   r.append(buf);
   r.append("------------------------------------------------------\n");
   const double mult = 100.0 / num_;

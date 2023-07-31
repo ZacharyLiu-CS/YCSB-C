@@ -87,6 +87,7 @@ struct utree_config : public config_templates {
 struct neopmkv_config : public config_templates {
   uint64_t chunk_size_;
   uint64_t db_size_;
+  bool enable_schema_aware_;
   bool enable_pbrb_;
   bool async_pbrb_;
   bool async_gc_;
@@ -251,6 +252,7 @@ template <> struct convert<ycsbc::utree_config> {
 // struct neopmkv_config : public config_templates {
 //   uint64_t chunk_size_;
 //   uint64_t db_size_;
+//   bool enable_schema_aware_;
 //   bool enable_pbrb_;
 //   bool async_pbrb_;
 //   bool async_gc_;
@@ -271,6 +273,7 @@ template <> struct convert<ycsbc::neopmkv_config> {
     // push back all config
     node.push_back(db_size);
     node.push_back(nc.enable_pbrb_);
+    node.push_back(nc.enable_schema_aware_);
     node.push_back(nc.async_pbrb_);
     node.push_back(nc.async_gc_);
     node.push_back(nc.max_page_num_);
@@ -290,6 +293,7 @@ template <> struct convert<ycsbc::neopmkv_config> {
     std::string db_size = node["db_size"].as<std::string>();
     nc.db_size_ = ycsbc::convert_to_base(db_size);
     nc.enable_pbrb_ = node["enable_pbrb"].as<bool>();
+    nc.enable_schema_aware_ = node["enable_schema_aware"].as<bool>();
     nc.async_pbrb_ = node["async_pbrb"].as<bool>();
     nc.async_gc_ = node["async_gc"].as<bool>();
     nc.max_page_num_ = node["max_page_num"].as<uint64_t>();

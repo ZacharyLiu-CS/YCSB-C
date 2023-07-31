@@ -9,6 +9,7 @@
 #pragma once
 
 #include <atomic>
+#include <bits/stdint-uintn.h>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -69,6 +70,14 @@ public:
 private:
   NKV::NeoPMKV *neopmkv_ = nullptr;
   std::atomic<unsigned> no_found_;
+  bool enable_schema_aware_ = true;
+  typedef std::chrono::high_resolution_clock Time;
+  std::atomic<uint64_t> update_ser_count_{0};
+  std::atomic<uint64_t> update_ser_sum_{0};
+  std::atomic<uint64_t> update_des_count_{0};
+  std::atomic<uint64_t> update_des_sum_{0};
 
+  std::atomic<uint64_t> read_des_count_{0};
+  std::atomic<uint64_t> read_des_sum_{0};
 };
 } // namespace ycsbc

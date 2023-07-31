@@ -8,7 +8,7 @@
 
 
 recordcount=10000000
-operationcount=10000
+operationcount=100000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
@@ -23,4 +23,5 @@ requestdistribution=zipfian
 maxscanlength=100
 fieldcount=10
 fieldlength=84
-scanlengthdistribution=uniform
+scanlengthdistribution=const
+zipfianconst=1.2

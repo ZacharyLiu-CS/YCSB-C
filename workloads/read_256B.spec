@@ -16,7 +16,8 @@ readproportion=1
 updateproportion=0
 scanproportion=0
 insertproportion=0
-fieldcount=4
-fieldlength=64
+fieldcount=10
+fieldlength=24
 requestdistribution=zipfian
+zipfianconst=1.2
 

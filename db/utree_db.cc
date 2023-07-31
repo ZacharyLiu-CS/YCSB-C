@@ -51,7 +51,8 @@ Status UTree::Read(const std::string &table, const std::string &key,
   value_ptr = bt_->search(key_content);
   auto t1 = Time::now();
   index_read_count_.fetch_add(1);
-  index_read_latency_sum_.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(t1-t0).count());
+  index_read_latency_sum_.fetch_add(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
 
   if (value_ptr == nullptr) {
     no_found_++;
@@ -63,8 +64,8 @@ Status UTree::Read(const std::string &table, const std::string &key,
   engine_ptr_->read((NKV::PmemAddress)value_ptr, value);
   auto t3 = Time::now();
   pmem_read_count_.fetch_add(1);
-  pmem_read_latency_sum_.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(t3-t2).count());
-
+  pmem_read_latency_sum_.fetch_add(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count());
 
   if (fields != nullptr) {
     DeserializeRowFilter(result, value, *fields);
@@ -108,7 +109,14 @@ Status UTree::Update(const std::string &table, const std::string &key,
   }
   // then update the specific field
   std::string value;
+  auto t2 = Time::now();
   engine_ptr_->read((NKV::PmemAddress)value_ptr, value);
+  auto t3 = Time::now();
+  pmem_read_count_.fetch_add(1);
+  pmem_read_latency_sum_.fetch_add(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count());
+
+  auto t0 = Time::now();
 
   std::vector<KVPair> current_values;
   DeserializeRow(current_values, value);
@@ -128,8 +136,19 @@ Status UTree::Update(const std::string &table, const std::string &key,
 
   value.clear();
   SerializeRow(current_values, value);
+
+  auto t1 = Time::now();
+  update_parse_count_.fetch_add(1);
+  update_parse_sum_.fetch_add(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
+
+  auto t4 = Time::now();
   NKV::PmemAddress addr;
   engine_ptr_->append(addr, value.data(), value.size());
+  auto t5 = Time::now();
+  pmem_write_count_.fetch_add(1);
+  pmem_write_latency_sum_.fetch_add(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t5 - t4).count());
 
   bt_->insert(key_content, (char *)addr);
   return Status::kOK;
@@ -147,8 +166,30 @@ void UTree::printStats() {
 }
 
 UTree::~UTree() {
-  std::cout<< "Read index count: " << index_read_count_.load() << " Avarage latency (nanoseconds): " << index_read_latency_sum_.load()/index_read_count_.load() << std::endl;
-  std::cout<< "Read pmem count: " << pmem_read_count_.load() << " Avarage latency (nanoseconds): " << pmem_read_latency_sum_.load()/pmem_read_count_.load() << std::endl;
+  if (index_read_count_.load() != 0) {
+    std::cout << "Read index count: " << index_read_count_.load()
+              << " Avarage latency (nanoseconds): "
+              << index_read_latency_sum_.load() / index_read_count_.load()
+              << std::endl;
+  }
+  if (pmem_read_count_.load() != 0) {
+    std::cout << "Read pmem count: " << pmem_read_count_.load()
+              << " Avarage latency (nanoseconds): "
+              << pmem_read_latency_sum_.load() / pmem_read_count_.load()
+              << std::endl;
+  }
+  if (pmem_write_count_.load() != 0) {
+    std::cout << "Write pmem count: " << pmem_write_count_.load()
+              << " Avarage latency (nanoseconds): "
+              << pmem_write_latency_sum_.load() / pmem_write_count_.load()
+              << std::endl;
+  }
+  if (update_parse_count_.load() != 0) {
+    std::cout << "Update parse count: " << update_parse_count_.load()
+              << " Avarage latency (nanoseconds): "
+              << update_parse_sum_.load() / update_parse_count_.load()
+              << std::endl;
+  }
   printStats();
   delete bt_;
   delete engine_ptr_;

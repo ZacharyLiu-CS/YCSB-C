@@ -60,6 +60,8 @@ namespace utils {
       double Sum() const;
       double Median() const;
       double Percentile(double p) const;
+      double P99() const;
+      double P95() const;
       double Average() const;
       double StandardDeviation() const;
       int GetRecordUnit() const;

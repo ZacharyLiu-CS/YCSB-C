@@ -12,16 +12,18 @@
 # workload here (which we believe is more typical of how people build systems.)
 
 recordcount=10000000
-operationcount=10000000
+operationcount=100000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
 insertstart=30000000
-readproportion=1.0
+readproportion=0
 updateproportion=0
-scanproportion=0
+scanproportion=1
 insertproportion=0
+requestdistribution=zipfian
+maxscanlength=100
 fieldcount=10
 fieldlength=84
-requestdistribution=uniform
-
+scanlengthdistribution=const
+zipfianconst=1.2

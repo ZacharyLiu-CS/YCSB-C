@@ -63,6 +63,12 @@ class UTree : public DB {
   std::atomic<uint64_t> pmem_read_count_{0};
   std::atomic<uint64_t> pmem_read_latency_sum_{0};
 
+  std::atomic<uint64_t> pmem_write_count_{0};
+  std::atomic<uint64_t> pmem_write_latency_sum_{0};
+
+  std::atomic<uint64_t> update_parse_count_{0};
+  std::atomic<uint64_t> update_parse_sum_{0};
+
   NKV::PmemEngine * engine_ptr_;
   NKV::PmemEngineConfig engine_config_;
 

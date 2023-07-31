@@ -78,6 +78,8 @@ int main(const int argc, const char *argv[]) {
     exit(0);
   }
   const int num_threads = stoi(props.GetProperty("threadcount", "1"));
+  bool async_test = props.GetProperty("async", "true") == "true";
+  std::cout << "async:" << async_test << std::endl;
 
   ycsbc::MixedWorkload mixed_workload;
   mixed_workload.Init(props, num_threads);
@@ -102,9 +104,15 @@ int main(const int argc, const char *argv[]) {
       auto core_workload = mixed_workload.GetNext();
       int thread_ops =
           core_workload->GetRecordCount() / core_workload->GetThreadCount();
-      actual_load_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
+      if( async_test == true ){
+        actual_load_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
                                          core_workload, thread_ops, true,
                                          histogram_tmp));
+      }else{
+        actual_load_ops.emplace_back(async(launch::deferred, DelegateClient, db.get(),
+                                         core_workload, thread_ops, true,
+                                         histogram_tmp));
+      }
       total_ops += thread_ops;
     }
     assert((int)actual_load_ops.size() == num_threads);
@@ -124,8 +132,11 @@ int main(const int argc, const char *argv[]) {
     for (auto &h : histogram_list) {
       histogram.Merge(*h);
     }
-    double duration =
-        histogram.Sum() / (num_threads * histogram.GetRecordUnit());
+  double duration = 0;
+  if( async_test == true) 
+    duration = histogram.Sum() / (num_threads * histogram.GetRecordUnit());
+  else
+    duration = histogram.Sum() / (histogram.GetRecordUnit());
 
     cerr << "# Loading records:\t" << sum << endl;
     cerr << "Load Perf: " << props["dbname"] << '\t' << file_name << '\t'
@@ -156,9 +167,16 @@ int main(const int argc, const char *argv[]) {
     auto core_workload = mixed_workload.GetNext();
     int thread_ops =
         core_workload->GetOperationCount() / core_workload->GetThreadCount();
-    actual_transaction_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
+    if( async_test == true ){
+      actual_transaction_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
                                               core_workload, thread_ops, false,
                                               histogram_tmp));
+    } else {
+      actual_transaction_ops.emplace_back(async(launch::deferred, DelegateClient, db.get(),
+                                              core_workload, thread_ops, false,
+                                              histogram_tmp));
+    }
+
     total_ops += thread_ops;
   }
   assert((int)actual_transaction_ops.size() == num_threads);
@@ -178,7 +196,11 @@ int main(const int argc, const char *argv[]) {
   }
 
   db->Close();
-  double duration = histogram.Sum() / (num_threads * histogram.GetRecordUnit());
+  double duration = 0;
+  if( async_test == true) 
+    duration = histogram.Sum() / (num_threads * histogram.GetRecordUnit());
+  else
+    duration = histogram.Sum() / (histogram.GetRecordUnit());
   cerr << "# Transaction count:\t" << total_ops << endl;
   cerr << "Run Perf: " << props["dbname"] << '\t' << file_name << '\t'
        << num_threads << '\t';
@@ -247,6 +269,14 @@ string ParseCommandLine(int argc, const char *argv[],
       }
       props.SetProperty("skipload", argv[argindex]);
       argindex++;
+    } else if (strcmp(argv[argindex], "-async") == 0) {
+      argindex++;
+      if (argindex >= argc) {
+        UsageMessage(argv[0]);
+        exit(0);
+      }
+      props.SetProperty("async", argv[argindex]);
+      argindex++;
     } else if (strcmp(argv[argindex], "-P") == 0) {
       argindex++;
       if (argindex >= argc) {
@@ -291,9 +321,11 @@ void UsageMessage(const char *command) {
   cout << "  -P propertyfile: load properties from the given file. Multiple "
           "files can"
        << endl;
+  cout << "  -async true: run clients with threads concurrently" << endl;
   cout << "                   be specified, and will be processed in the order "
           "specified"
        << endl;
+       
 }
 
 inline bool StrStartWith(const char *str, const char *pre) {

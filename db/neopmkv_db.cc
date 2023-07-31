@@ -28,10 +28,11 @@ NEOPMKV::NEOPMKV(const char *dbfilename) : no_found_(0) {
       static_cast<neopmkv_config *>(config_reader.get_config("neopmkv").get());
 
   if (neopmkv_ == nullptr) {
-    neopmkv_ = new NKV::NeoPMKV(dbfilename, nc->chunk_size_, nc->db_size_,
-                                nc->enable_pbrb_, nc->async_pbrb_, nc->async_gc_,
-                                nc->max_page_num_, nc->rw_micro_, nc->gc_threshold_,
-                                nc->gc_interval_micro_, nc->hit_threshold_);
+    neopmkv_ = new NKV::NeoPMKV(
+        dbfilename, nc->chunk_size_, nc->db_size_, nc->enable_pbrb_,
+        nc->async_pbrb_, nc->async_gc_, nc->max_page_num_, nc->rw_micro_,
+        nc->gc_threshold_, nc->gc_interval_micro_, nc->hit_threshold_);
+    enable_schema_aware_ = nc->enable_schema_aware_;
   }
   if (neopmkv_ == nullptr) {
     LOGOUT("init neopmkv failed!");
@@ -46,24 +47,37 @@ Status NEOPMKV::Read(const std::string &table, const std::string &key,
 
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
 
-
-  std::vector<uint32_t> fields_id;
-  if (fields != nullptr) {
-    for (auto &i : *fields) {
-      fields_id.push_back(GetIntFromField(i) * 2 + 1);
+  if (enable_schema_aware_ == true) {
+    std::vector<uint32_t> fields_id;
+    if (fields != nullptr) {
+      for (auto &i : *fields) {
+        fields_id.push_back(GetIntFromField(i) * 2 + 1);
+      }
     }
+    auto s = neopmkv_->get(read_key, value, fields_id);
+
+    if (s == false) {
+      no_found_++;
+      return Status::kErrorNoData;
+    }
+    return Status::kOK;
   }
-  auto s = neopmkv_->get(read_key, value, fields_id);
- 
+
+  auto s = neopmkv_->get(read_key, value);
   if (s == false) {
     no_found_++;
     return Status::kErrorNoData;
   }
-  // if (fields != nullptr) {
-  //   DeserializeRowFilter(result, value, *fields);
-  // } else {
-  //   DeserializeRow(result, value);
-  // }
+  auto t0 = Time::now();
+  if (fields != nullptr) {
+    DeserializeRowFilter(result, value, *fields);
+  } else {
+    DeserializeRow(result, value);
+  }
+  auto t1 = Time::now();
+  read_des_count_.fetch_add(1);
+  read_des_sum_.fetch_add(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
   return Status::kOK;
 }
 
@@ -74,22 +88,28 @@ Status NEOPMKV::Scan(const std::string &table, const std::string &key, int len,
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
   uint64_t key_content = CoreWorkload::GetIntFromKey(key);
-  std::vector<uint32_t> fields_id;
-  if (fields != nullptr) {
-    for (auto &i : *fields) {
-      fields_id.push_back(GetIntFromField(i) * 2 + 1);
+
+  if (enable_schema_aware_ == true) {
+    std::vector<uint32_t> fields_id;
+    if (fields != nullptr) {
+      for (auto &i : *fields) {
+        fields_id.push_back(GetIntFromField(i) * 2 + 1);
+      }
+    }
+    neopmkv_->scan(read_key, read_value, len, fields_id);
+    return Status::kOK;
+  }
+
+  neopmkv_->scan(read_key, read_value, len);
+  for (auto &v : read_value) {
+    result.push_back(std::vector<KVPair>());
+    std::vector<KVPair> &values = result.back();
+    if (fields != nullptr) {
+      DeserializeRowFilter(values, v, *fields);
+    } else {
+      DeserializeRow(values, v);
     }
   }
-  neopmkv_->scan(read_key, read_value, len, fields_id);
-  // for (auto &v : read_value) {
-  //   result.push_back(std::vector<KVPair>());
-  //   std::vector<KVPair> &values = result.back();
-  //   if (fields != nullptr) {
-  //     DeserializeRowFilter(values, v, *fields);
-  //   } else {
-  //     DeserializeRow(values, v);
-  //   }
-  // }
   return Status::kOK;
 }
 
@@ -108,13 +128,51 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
   // first read values from db
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
+  if (enable_schema_aware_ == true) {
+    std::string value;
+    auto s = neopmkv_->update(read_key, values);
+    if (s == false) {
+      no_found_++;
+      return Status::kErrorNoData;
+    }
+    return Status::kOK;
+  }
 
+  // then update the specific field
   std::string value;
-  auto s = neopmkv_->update(read_key, values);
+  auto s = neopmkv_->get(read_key, value);
   if (s == false) {
     no_found_++;
     return Status::kErrorNoData;
   }
+  auto t0 = Time::now();
+  std::vector<KVPair> current_values;
+  DeserializeRow(current_values, value);
+  auto t1 = Time::now();
+  for (auto &new_field : values) {
+    bool found = false;
+    for (auto &current_field : current_values) {
+      if (current_field.first == new_field.first) {
+        found = true;
+        current_field.second = new_field.second;
+        break;
+      }
+    }
+    if (found == false) {
+      break;
+    }
+  }
+  value.clear();
+  SerializeRow(current_values, value);
+  auto t2 = Time::now();
+  update_des_count_.fetch_add(1);
+  update_ser_count_.fetch_add(1);
+  update_ser_sum_.fetch_add(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count());
+  update_des_sum_.fetch_add(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
+
+  s = neopmkv_->put(read_key, value);
   return Status::kOK;
 }
 
@@ -130,7 +188,21 @@ Status NEOPMKV::Delete(const std::string &table, const std::string &key) {
 void NEOPMKV::printStats() {
   std::cout << "print neopmkv statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
-
+  if (update_ser_count_.load() != 0) {
+    std::cout << "Update serialization count: " << update_ser_count_.load()
+              << " Avarage latency (nanoseconds): "
+              << update_ser_sum_.load() / update_ser_count_.load() << std::endl;
+  }
+  if (update_des_count_.load() != 0) {
+    std::cout << "Update deserialization count: " << update_des_count_.load()
+              << " Avarage latency (nanoseconds): "
+              << update_des_sum_.load() / update_des_count_.load() << std::endl;
+  }
+  if (read_des_count_.load() != 0) {
+    std::cout << "Read deserialization count: " << read_des_count_.load()
+              << " Avarage latency (nanoseconds): "
+              << read_des_sum_.load() / read_des_count_.load() << std::endl;
+  }
 }
 
 NEOPMKV::~NEOPMKV() {

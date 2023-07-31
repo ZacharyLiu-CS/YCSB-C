@@ -17,12 +17,13 @@ workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
 insertstart=40000000
-readproportion=1.0
-updateproportion=0
+readproportion=0
+updateproportion=1.0
 scanproportion=0
 insertproportion=0
 fieldcount=10
 fieldlength=84
-requestdistribution=uniform
+requestdistribution=zipfian
+zipfianconst=1.20
 
 

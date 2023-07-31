@@ -57,6 +57,9 @@ const string CoreWorkload::REQUEST_DISTRIBUTION_PROPERTY =
     "requestdistribution";
 const string CoreWorkload::REQUEST_DISTRIBUTION_DEFAULT = "uniform";
 
+const string CoreWorkload::ZIPFIAN_CONST_PROPERTY = "zipfianconst";
+const string CoreWorkload::ZIPFIAN_CONST_DEFAULT = "0.9";
+
 const string CoreWorkload::ZERO_PADDING_PROPERTY = "zeropadding";
 const string CoreWorkload::ZERO_PADDING_DEFAULT = "24";
 
@@ -93,6 +96,8 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
       p.GetProperty(SCAN_PROPORTION_PROPERTY, SCAN_PROPORTION_DEFAULT));
   double readmodifywrite_proportion = std::stod(p.GetProperty(
       READMODIFYWRITE_PROPORTION_PROPERTY, READMODIFYWRITE_PROPORTION_DEFAULT));
+  double zipfian_const = std::stod(
+      p.GetProperty(ZIPFIAN_CONST_PROPERTY, ZIPFIAN_CONST_DEFAULT));
 
   record_count_ = std::stoi(p.GetProperty(RECORD_COUNT_PROPERTY));
   op_count_ = std::stoi(p.GetProperty(OPERATION_COUNT_PROPERTY));
@@ -151,7 +156,7 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
     // and pick another key.
     int new_keys = (int)(op_count_ * insert_proportion * 2); // a fudge factor
     key_chooser_ = new ScrambledZipfianGenerator(
-        insert_start, insert_start + record_count_ + new_keys);
+        insert_start, insert_start + record_count_ + new_keys , zipfian_const);
 
   } else if (request_dist == "latest") {
     key_chooser_ = new SkewedLatestGenerator(insert_key_sequence_);
@@ -165,7 +170,7 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
   if (scan_len_dist == "uniform") {
     scan_len_chooser_ = new UniformGenerator(1, max_scan_len);
   } else if (scan_len_dist == "zipfian") {
-    scan_len_chooser_ = new ZipfianGenerator(1, max_scan_len);
+    scan_len_chooser_ = new ZipfianGenerator(1, max_scan_len, zipfian_const);
   } else if (scan_len_dist == "const") {
     scan_len_chooser_ = new ConstGenerator(max_scan_len);
   } else {

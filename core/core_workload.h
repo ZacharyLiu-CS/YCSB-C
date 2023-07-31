@@ -102,6 +102,8 @@ public:
   static const std::string REQUEST_DISTRIBUTION_PROPERTY;
   static const std::string REQUEST_DISTRIBUTION_DEFAULT;
 
+  static const std::string ZIPFIAN_CONST_PROPERTY;
+  static const std::string ZIPFIAN_CONST_DEFAULT;
   ///
   /// The name of the property for adding zero padding to record numbers in
   /// order to match string sort order. Controls the number of 0s to left pad

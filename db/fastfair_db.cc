@@ -8,6 +8,7 @@
 
 #include "db/fastfair_db.h"
 #include "core/core_workload.h"
+#include <cstring>
 
 #define LOGOUT(msg)                                                            \
   do {                                                                         \
@@ -52,7 +53,7 @@ Status FastFair::Read(const std::string &table, const std::string &key,
                       const std::vector<std::string> *fields,
                       std::vector<KVPair> &result) {
   char *value_ptr = nullptr;
-  int64_t key_content = CoreWorkload::GetIntFromKey(key);
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   value_ptr = D_RW(bt_)->btree_search(key_content);
 
   if (value_ptr == nullptr) {
@@ -60,6 +61,7 @@ Status FastFair::Read(const std::string &table, const std::string &key,
     return Status::kErrorNoData;
   }
   std::string value;
+
   engine_ptr_->read((NKV::PmemAddress)value_ptr, value);
   if (fields != nullptr) {
     DeserializeRowFilter(result, value, *fields);
@@ -72,10 +74,18 @@ Status FastFair::Read(const std::string &table, const std::string &key,
 Status FastFair::Scan(const std::string &table, const std::string &key, int len,
                       const std::vector<std::string> *fields,
                       std::vector<std::vector<KVPair>> &result) {
-  int64_t start_key = CoreWorkload::GetIntFromKey(key);
-  uint64_t valueptr_list[len];
+  uint64_t start_key = CoreWorkload::GetIntFromKey(key);
+  unsigned long valueptr_list[len];
+  memset(valueptr_list, 0, len);
   // std::cout << "Scan start key: " << start_key << std::endl;
+  auto t0 = Time::now();
   D_RW(bt_)->btree_search_range(start_key, INT32_MAX, valueptr_list, len);
+  auto t1 = Time::now();
+  index_read_count_.fetch_add(1);
+  index_read_latency_sum_.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(t1-t0).count());
+
+  auto t2 = Time::now();
+
   for (auto i = 0; i < len; i++) {
     std::string value;
     if (valueptr_list[i] == (unsigned long)NULL) {
@@ -83,10 +93,16 @@ Status FastFair::Scan(const std::string &table, const std::string &key, int len,
     }
     value.clear();
     engine_ptr_->read((NKV::PmemAddress)valueptr_list[i], value);
-    // std::cout << "Key: " << valueptr_list[i] << " Value: " << value << std::endl;
+    // std::cout << "Scan start["<<start_key<<"]: " << i<< "Key: " << valueptr_list[i] <<" value size"<< value.size()<< std::endl;
     result.push_back(std::vector<KVPair>());
     std::vector<KVPair> &values = result.back();
   }
+  auto t3 = Time::now();
+  pmem_read_count_.fetch_add(1);
+  pmem_read_latency_sum_.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(t3-t2).count());
+
+
+  // std::cout << "scan done: " << done_.fetch_add(1)<< std::endl;
   return Status::kOK;
 }
 
@@ -97,7 +113,7 @@ Status FastFair::Insert(const std::string &table, const std::string &key,
 
   NKV::PmemAddress addr;
   engine_ptr_->append(addr, value.data(), value.size());
-  int64_t key_content = CoreWorkload::GetIntFromKey(key);
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   D_RW(bt_)->btree_insert(key_content, (char *)addr);
 
   // std::cout << "Insert key: "<< key_content << " Ptr: " << addr << std::endl;
@@ -107,7 +123,7 @@ Status FastFair::Insert(const std::string &table, const std::string &key,
 Status FastFair::Update(const std::string &table, const std::string &key,
                         std::vector<KVPair> &values) {
   char *value_ptr = nullptr;
-  int64_t key_content = CoreWorkload::GetIntFromKey(key);
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   value_ptr = D_RW(bt_)->btree_search(key_content);
   if (value_ptr == nullptr) {
     no_found_++;
@@ -143,12 +159,14 @@ Status FastFair::Update(const std::string &table, const std::string &key,
 }
 
 Status FastFair::Delete(const std::string &table, const std::string &key) {
-  int64_t key_content = CoreWorkload::GetIntFromKey(key);
+  uint64_t key_content = CoreWorkload::GetIntFromKey(key);
   D_RW(bt_)->btree_delete(key_content);
   return Status::kOK;
 }
 
 void FastFair::printStats() {
+  std::cout<< "Read index count: " << index_read_count_.load() << " Avarage latency (nanoseconds): " << index_read_latency_sum_.load()/index_read_count_.load() << std::endl;
+  std::cout<< "Read pmem count: " << pmem_read_count_.load() << " Avarage latency (nanoseconds): " << pmem_read_latency_sum_.load()/pmem_read_count_.load() << std::endl;
   std::cout << "print fastfair statistics: " << std::endl;
   std::cout << "Missing operations count : " << no_found_ << std::endl;
 }
