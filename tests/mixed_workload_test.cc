@@ -48,8 +48,8 @@ TEST(MixedWorkloadTest, MixedGenerateTest) {
   mixed_workload.Init(props, thread_count);
   std::cout << mixed_workload.ToString() << std::endl;
   std::string expected_output;
-  expected_output.append("Workload Mixed : workloada.spec;\t Thread Count : 1\n");
-  expected_output.append("Workload Mixed : workloadb.spec;\t Thread Count : 3\n");
+  expected_output.append("Workload Mixed : workloada.spec;\t Thread Count : 2\n");
+  expected_output.append("Workload Mixed : workloadb.spec;\t Thread Count : 2\n");
 
   ASSERT_EQ(mixed_workload.ToString(), expected_output);
 }
