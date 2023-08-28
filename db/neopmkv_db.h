@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "core/config_reader.h"
+#include "core/core_workload.h"
 #include "core/db.h"
 #include "neopmkv.h"
 
@@ -32,16 +33,15 @@ public:
   uint64_t CreateSchema(std::string schema_name, size_t field_count,
                         size_t field_len) {
     std::vector<NKV::SchemaField> fields;
+    field_count_ = field_count;
+    field_len_ = field_len;
     for (auto i = 0; i < field_count; i++) {
-      std::string field_name = std::string("name").append(std::to_string(i));
-      std::string field_content =
-          std::string("field").append(std::to_string(i));
+      std::string field_name = std::string("field").append(std::to_string(i));
       // std::cout << "field name size: " << field_name.size() << std::endl;
-      fields.push_back(NKV::SchemaField(NKV::FieldType::STRING, field_name, 6));
       fields.push_back(
-          NKV::SchemaField(NKV::FieldType::STRING, field_content, field_len));
+          NKV::SchemaField(NKV::FieldType::STRING, field_name, field_len));
     }
-    return neopmkv_->createSchema(fields, 0, schema_name);
+    return neopmkv_->CreateSchema(fields, 0, schema_name);
   }
 
   Status Read(const std::string &table, const std::string &key,
@@ -67,10 +67,37 @@ public:
   }
   ~NEOPMKV();
 
+  inline void GetFirstIntElementToVec(
+      const std::vector<std::pair<std::string, std::string>> &pairs,
+      std::vector<uint32_t> &items) {
+    auto firstElement = [&](const std::pair<std::string, std::string> &p) {
+      return this->GetIntFromField(p.first);
+    };
+
+    // Use std::transform() to convert the vector of pairs to a vector of
+    // integers.
+    std::transform(pairs.begin(), pairs.end(), std::back_inserter(items),
+                   firstElement);
+  }
+  inline void GetSecondElementToVec(
+      const std::vector<std::pair<std::string, std::string>> &pairs,
+      std::vector<std::string> &items) {
+    auto secondElement = [](const std::pair<std::string, std::string> &p) {
+      return p.second;
+    };
+
+    // Use std::transform() to convert the vector of pairs to a vector of
+    // integers.
+    std::transform(pairs.begin(), pairs.end(), std::back_inserter(items),
+                   secondElement);
+  }
+
 private:
   NKV::NeoPMKV *neopmkv_ = nullptr;
   std::atomic<unsigned> no_found_;
   bool enable_schema_aware_ = true;
+  size_t field_count_ = 0;
+  size_t field_len_ = 0;
   typedef std::chrono::high_resolution_clock Time;
   std::atomic<uint64_t> update_ser_count_{0};
   std::atomic<uint64_t> update_ser_sum_{0};

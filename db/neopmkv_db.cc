@@ -8,6 +8,8 @@
 
 #include "neopmkv_db.h"
 #include "core/core_workload.h"
+#include "db.h"
+#include <vector>
 #define LOGOUT(msg)                                                            \
   do {                                                                         \
     std::cerr << msg << std::endl;                                             \
@@ -30,8 +32,9 @@ NEOPMKV::NEOPMKV(const char *dbfilename) : no_found_(0) {
   if (neopmkv_ == nullptr) {
     neopmkv_ = new NKV::NeoPMKV(
         dbfilename, nc->chunk_size_, nc->db_size_, nc->enable_pbrb_,
-        nc->async_pbrb_, nc->async_gc_, nc->max_page_num_, nc->rw_micro_,
-        nc->gc_threshold_, nc->gc_interval_micro_, nc->hit_threshold_);
+        nc->async_pbrb_, nc->async_gc_, nc->inplace_update_opt_,
+        nc->max_page_num_, nc->rw_micro_, nc->gc_threshold_,
+        nc->gc_interval_micro_, nc->hit_threshold_);
     enable_schema_aware_ = nc->enable_schema_aware_;
   }
   if (neopmkv_ == nullptr) {
@@ -43,27 +46,32 @@ Status NEOPMKV::Read(const std::string &table, const std::string &key,
                      const std::vector<std::string> *fields,
                      std::vector<KVPair> &result) {
   std::string value;
+  std::vector<std::string> fields_value;
   NKV::SchemaId schemaId = key[3] - '0';
 
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
-
+  // schema aware
   if (enable_schema_aware_ == true) {
     std::vector<uint32_t> fields_id;
+    bool s;
     if (fields != nullptr) {
       for (auto &i : *fields) {
-        fields_id.push_back(GetIntFromField(i) * 2 + 1);
+        fields_id.push_back(GetIntFromField(i));
       }
+      // partial get
+      s = neopmkv_->MultiPartialGet(read_key, fields_value, fields_id);
+      return Status::kOK;
     }
-    auto s = neopmkv_->get(read_key, value, fields_id);
-
+    // full get
+    s = neopmkv_->Get(read_key, value);
     if (s == false) {
       no_found_++;
       return Status::kErrorNoData;
     }
     return Status::kOK;
   }
-
-  auto s = neopmkv_->get(read_key, value);
+  // schema no-aware
+  auto s = neopmkv_->Get(read_key, value);
   if (s == false) {
     no_found_++;
     return Status::kErrorNoData;
@@ -89,18 +97,24 @@ Status NEOPMKV::Scan(const std::string &table, const std::string &key, int len,
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
   uint64_t key_content = CoreWorkload::GetIntFromKey(key);
 
+  // schema aware
   if (enable_schema_aware_ == true) {
     std::vector<uint32_t> fields_id;
     if (fields != nullptr) {
       for (auto &i : *fields) {
-        fields_id.push_back(GetIntFromField(i) * 2 + 1);
+        fields_id.push_back(GetIntFromField(i));
       }
+      // partial value access
+      neopmkv_->PartialScan(read_key, read_value, len, fields_id[0]);
+      return Status::kOK;
     }
-    neopmkv_->scan(read_key, read_value, len, fields_id);
+    // full value access
+    neopmkv_->Scan(read_key, read_value, len);
     return Status::kOK;
   }
 
-  neopmkv_->scan(read_key, read_value, len);
+  // schema no-aware
+  neopmkv_->Scan(read_key, read_value, len);
   for (auto &v : read_value) {
     result.push_back(std::vector<KVPair>());
     std::vector<KVPair> &values = result.back();
@@ -115,11 +129,11 @@ Status NEOPMKV::Scan(const std::string &table, const std::string &key, int len,
 
 Status NEOPMKV::Insert(const std::string &table, const std::string &key,
                        std::vector<KVPair> &values) {
-  std::string value;
-  SerializeRow(values, value);
+  std::vector<NKV::Value> v;
+  GetSecondElementToVec(values, v);
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
-  auto s = neopmkv_->put(read_key, value);
+  auto s = neopmkv_->Put(read_key, v);
   return Status::kOK;
 }
 
@@ -128,9 +142,14 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
   // first read values from db
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
+  std::vector<uint32_t> fields;
+  std::vector<NKV::Value> fieldValues;
+  GetFirstIntElementToVec(values, fields);
+  GetSecondElementToVec(values, fieldValues);
   if (enable_schema_aware_ == true) {
     std::string value;
-    auto s = neopmkv_->update(read_key, values);
+    // partial value update
+    auto s = neopmkv_->MultiPartialUpdate(read_key, fieldValues, fields);
     if (s == false) {
       no_found_++;
       return Status::kErrorNoData;
@@ -140,7 +159,7 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
 
   // then update the specific field
   std::string value;
-  auto s = neopmkv_->get(read_key, value);
+  auto s = neopmkv_->Get(read_key, value);
   if (s == false) {
     no_found_++;
     return Status::kErrorNoData;
@@ -172,7 +191,7 @@ Status NEOPMKV::Update(const std::string &table, const std::string &key,
   update_des_sum_.fetch_add(
       std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
 
-  s = neopmkv_->put(read_key, value);
+  s = neopmkv_->Put(read_key, value);
   return Status::kOK;
 }
 
@@ -180,7 +199,7 @@ Status NEOPMKV::Delete(const std::string &table, const std::string &key) {
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
 
-  auto s = neopmkv_->remove(read_key);
+  auto s = neopmkv_->Remove(read_key);
 
   return Status::kOK;
 }

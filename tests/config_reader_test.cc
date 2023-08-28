@@ -105,11 +105,11 @@ TEST(YAMLTest, TestConvertSize){
 }
 TEST(ConfigReaderTest, TestReadDBConfig){
   ycsbc::ConfigReader config_reader = ycsbc::ConfigReader("../db_config.yaml");
-  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->memtable_size_, uint64_t(134217728));
-  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->thread_compaction_, uint64_t(8));
-  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->block_cache_size_,uint64_t(8589934592));
-  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->bloom_bits_,uint64_t(10));
-  ASSERT_FALSE(static_cast<ycsbc::db_config*>(config_reader.get_config("rocksdb").get())->enable_direct_io_);
+  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("leveldb").get())->memtable_size_, uint64_t(134217728));
+  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("leveldb").get())->thread_compaction_, uint64_t(8));
+  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("leveldb").get())->block_cache_size_,uint64_t(134217728));
+  ASSERT_EQ(static_cast<ycsbc::db_config*>(config_reader.get_config("leveldb").get())->bloom_bits_,uint64_t(10));
+  ASSERT_FALSE(static_cast<ycsbc::db_config*>(config_reader.get_config("leveldb").get())->enable_direct_io_);
 
 }
 int main(int argc, char **argv) {
