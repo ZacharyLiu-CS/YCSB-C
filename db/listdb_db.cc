@@ -17,11 +17,12 @@
 
 namespace ycsbc {
 
-inline std::string convert_valueptr_to_value(uint64_t& value_ptr) {
+inline std::string convert_valueptr_to_value(uint64_t &value_ptr) {
   size_t value_len = *((size_t *)value_ptr);
   value_ptr += sizeof(size_t);
   std::string value;
-  value.assign((char*)value_ptr, value_len);
+  value.resize(value_len, 0);
+  memcpy(value.data(), (char *)value_ptr, value_len);
   return value;
 }
 
@@ -40,7 +41,38 @@ LISTDB::LISTDB(const char *dbfilename) : no_found_(0) {
 Status LISTDB::Read(const std::string &table, const std::string &key,
                     const std::vector<std::string> *fields,
                     std::vector<KVPair> &result) {
-
+  // encoding by column
+  if (encoding_by_row_ == false) {
+    // read all field
+    if (fields == nullptr) {
+      for (auto i = 0; i < field_count_; i++) {
+        std::string field_key = key;
+        field_key.append("field").append(std::to_string(i));
+        uint64_t value_ptr;
+        bool res = client_->GetStringKV(field_key, &value_ptr);
+        if (res == false) {
+          return Status::kErrorNoData;
+        }
+        std::string field_value = convert_valueptr_to_value(value_ptr);
+        result.push_back({field_key, field_value});
+      }
+      return Status::kOK;
+    }
+    // read only some fields
+    for (auto &field_name : *fields) {
+      std::string field_key = key;
+      field_key.append(field_name);
+      uint64_t value_ptr;
+      bool res = client_->GetStringKV(field_key, &value_ptr);
+      if (res == false) {
+        return Status::kErrorNoData;
+      }
+      std::string field_value = convert_valueptr_to_value(value_ptr);
+      result.push_back({field_key, field_value});
+    }
+    return Status::kOK;
+  }
+  // encoding by row;
   uint64_t value_ptr;
   bool res = client_->GetStringKV(key, &value_ptr);
   if (res == false) {
@@ -65,6 +97,16 @@ Status LISTDB::Scan(const std::string &table, const std::string &key, int len,
 
 Status LISTDB::Insert(const std::string &table, const std::string &key,
                       std::vector<KVPair> &values) {
+
+  // encoding by column
+  if (encoding_by_row_ == false) {
+    for (auto &[field_name, field_value] : values) {
+      std::string field_key = key + field_name;
+      client_->PutStringKV(field_key, field_value);
+    }
+    return Status::kOK;
+  }
+  // encoding by row
   std::string value;
   SerializeRow(values, value);
   client_->PutStringKV(key, value);
@@ -73,10 +115,19 @@ Status LISTDB::Insert(const std::string &table, const std::string &key,
 
 Status LISTDB::Update(const std::string &table, const std::string &key,
                       std::vector<KVPair> &values) {
+  // encoding by column
+  if (encoding_by_row_ == false) {
+    for (auto &[field_name, field_value] : values) {
+      std::string field_key = key + field_name;
+      client_->PutStringKV(field_key, field_value);
+    }
+    return Status::kOK;
+  }
+
   // first read values from db
   uint64_t value_ptr;
   bool res = client_->GetStringKV(key, &value_ptr);
-  if (res == false){
+  if (res == false) {
     no_found_++;
     return Status::kErrorNoData;
   }
@@ -107,6 +158,18 @@ Status LISTDB::Update(const std::string &table, const std::string &key,
 }
 
 Status LISTDB::Delete(const std::string &table, const std::string &key) {
+  // if encoding by column
+  if (encoding_by_row_ == false) {
+    for (auto i = 0; i < field_count_; i++) {
+      std::string field_key = key;
+      field_key.append("field").append(std::to_string(i));
+
+      std::string null_value;
+      client_->PutStringKV(field_key, null_value);
+    }
+    
+    return Status::kOK;
+  }
   std::string null_value;
   client_->PutStringKV(key, null_value);
   return Status::kOK;

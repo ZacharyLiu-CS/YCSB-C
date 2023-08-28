@@ -18,7 +18,7 @@ pmrocksdb:
   db_size: "64GB"
 pmemkv:
   create_if_missing: true
-  db_size: "200GB"
+  db_size: "50GB"
   engine_type: "radix"
 fastfair:
   db_size: "64GB"

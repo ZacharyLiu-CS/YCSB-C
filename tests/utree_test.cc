@@ -43,16 +43,17 @@ TEST(UTreeTest, TestBasicOperation) {
   
   btree *bt = new btree(db_path, 16ULL << 30);
   entry_key_t key = 1;
-  std::string value = "11";
+  std::string value= "11";
+ 
   NKV::PmemAddress addr;
-  engine_ptr->append(addr, value.data(), value.size());
+  engine_ptr->append(addr, value.data(), value.size(), true);
 
   bt->insert(key, (char*)addr);
   char *v = bt->search(key);
   ASSERT_EQ((uint64_t)v, addr);
 
   std::string read_value;
-  engine_ptr->read(addr, read_value);
+  engine_ptr->read(addr, read_value ,true);
   ASSERT_EQ(value, read_value);
 }
 

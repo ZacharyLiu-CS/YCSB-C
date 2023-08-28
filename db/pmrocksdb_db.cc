@@ -8,9 +8,12 @@
 
 #include "pmrocksdb_db.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <iostream>
 #include <vector>
 
+#include "db.h"
 #include "rocksdb/cache.h"
 #include "rocksdb/filter_policy.h"
 #include "rocksdb/iterator.h"
@@ -75,6 +78,32 @@ PMRocksDB::PMRocksDB(const char *dbfilename) : no_found_(0) {
 Status PMRocksDB::Read(const std::string &table, const std::string &key,
                        const std::vector<std::string> *fields,
                        std::vector<KVPair> &result) {
+  // encoding by column
+  if (encoding_by_row_ == false) {
+    // read all field
+    if (fields == nullptr) {
+      for (auto i = 0; i < field_count_; i++) {
+        std::string field_key = key;
+        field_key.append("field").append(std::to_string(i));
+        std::string field_value;
+        rocksdb::Status s =
+            db_->Get(rocksdb::ReadOptions(), field_key, &field_value);
+        result.push_back({field_key, field_value});
+      }
+      return Status::kOK;
+    }
+    // read only some fields
+    for (auto &field_name : *fields) {
+      std::string field_value;
+      std::string field_key = key;
+      field_key.append(field_name);
+      rocksdb::Status s =
+          db_->Get(rocksdb::ReadOptions(), field_key, &field_value);
+      result.push_back({field_key, field_value});
+    }
+    return Status::kOK;
+  }
+  // encoding by row;
   std::string value;
   rocksdb::Status s = db_->Get(rocksdb::ReadOptions(), key, &value);
   if (s.IsNotFound()) {
@@ -94,9 +123,43 @@ Status PMRocksDB::Read(const std::string &table, const std::string &key,
 Status PMRocksDB::Scan(const std::string &table, const std::string &key,
                        int len, const std::vector<std::string> *fields,
                        std::vector<std::vector<KVPair>> &result) {
+  // encoding by column
   rocksdb::Iterator *iter = db_->NewIterator(rocksdb::ReadOptions());
   iter->Seek(key);
-  iter->Seek(key);
+
+  if (encoding_by_row_ == false) {
+    // read all fields
+    if (fields == nullptr) {
+      for (int i = 0; iter->Valid() && i < len; i++) {
+        result.push_back(std::vector<KVPair>());
+        std::vector<KVPair> &values = result.back();
+        for (auto i = 0; i < field_count_; i++) {
+          std::string field_value = iter->value().ToString();
+          std::string field_key =
+              std::string("field").append(std::to_string(i));
+          values.push_back({field_key, field_value});
+          iter->Next();
+        }
+      }
+      return Status::kOK;
+    }
+    // read only some fields
+    for (int i = 0; iter->Valid() && i < len; i++) {
+      result.push_back(std::vector<KVPair>());
+      std::vector<KVPair> &values = result.back();
+      for (auto i = 0; i < field_count_; i++) {
+        std::string field_value = iter->value().ToString();
+        std::string field_key = std::string("field").append(std::to_string(i));
+        if (std::find(fields->begin(), fields->end(), field_key) !=
+            fields->end()) {
+          values.push_back({field_key, field_value});
+        }
+        iter->Next();
+      }
+    }
+    return Status::kOK;
+  }
+  // encoding by row
   for (int i = 0; iter->Valid() && i < len; i++) {
     std::string value = iter->value().ToString();
     result.push_back(std::vector<KVPair>());
@@ -114,6 +177,20 @@ Status PMRocksDB::Scan(const std::string &table, const std::string &key,
 
 Status PMRocksDB::Insert(const std::string &table, const std::string &key,
                          std::vector<KVPair> &values) {
+
+    // encoding by column
+  if (encoding_by_row_ == false) {
+    rocksdb::Status s;
+    for (auto &[field_name, field_value] : values) {
+      std::string field_key = key + field_name;
+      s = db_->Put(rocksdb::WriteOptions(), field_key, field_value);
+    }
+    if (!s.ok()) {
+      LOGOUT(s.ToString());
+    }
+    return Status::kOK;
+  }
+  // encoding by row
   std::string value;
   SerializeRow(values, value);
 
@@ -127,6 +204,19 @@ Status PMRocksDB::Insert(const std::string &table, const std::string &key,
 
 Status PMRocksDB::Update(const std::string &table, const std::string &key,
                          std::vector<KVPair> &values) {
+  // encoding by column
+  if (encoding_by_row_ == false) {
+    rocksdb::Status s;
+    for (auto &[field_name, field_value] : values) {
+      std::string field_key = key + field_name;
+      s = db_->Put(rocksdb::WriteOptions(), field_key, field_value);
+    }
+    if (!s.ok()) {
+      LOGOUT(s.ToString());
+    }
+    return Status::kOK;
+  }
+
   // first read values from db
   std::string value;
   rocksdb::Status s;
@@ -164,6 +254,19 @@ Status PMRocksDB::Update(const std::string &table, const std::string &key,
 }
 
 Status PMRocksDB::Delete(const std::string &table, const std::string &key) {
+  // if encoding by column
+  if (encoding_by_row_ == false) {
+    rocksdb::Status s;
+    for (auto i = 0; i < field_count_; i++) {
+      std::string field_key = key;
+      field_key.append("field").append(std::to_string(i));
+      s = db_->Delete(rocksdb::WriteOptions(), field_key);
+    }
+    if (!s.ok()) {
+      LOGOUT(s.ToString());
+    }
+    return Status::kOK;
+  }
   rocksdb::Status s = db_->Delete(rocksdb::WriteOptions(), key);
   if (!s.ok()) {
     LOGOUT(s.ToString());

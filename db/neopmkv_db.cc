@@ -131,6 +131,9 @@ Status NEOPMKV::Insert(const std::string &table, const std::string &key,
                        std::vector<KVPair> &values) {
   std::vector<NKV::Value> v;
   GetSecondElementToVec(values, v);
+  for(auto &i : v){
+    std::cout << i << "-----" << std::endl;
+  }
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
   auto s = neopmkv_->Put(read_key, v);

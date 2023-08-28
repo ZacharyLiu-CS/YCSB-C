@@ -36,7 +36,7 @@ bool StrStartWith(const char *str, const char *pre);
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 
 int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl,
-                   const int num_ops, bool is_loading,
+                   const int num_ops, bool is_loading, bool encoding_by_row,
                    shared_ptr<utils::Histogram> histogram) {
   utils::Timer<utils::t_microseconds> timer;
   ycsbc::Client client(db, wl);
@@ -44,7 +44,7 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl,
     if (wl->getCreateSchemaRight() == true) {
       auto [field_count, field_len] = wl->GetValueStructure();
       auto schema_id =
-          db->CreateSchema(wl->GetWorkloadType(), field_count, field_len);
+          db->CreateSchema(wl->GetWorkloadType(), field_count, field_len, encoding_by_row);
       std::cout << "we got schema id: " << schema_id
                 << " field count: " << field_count
                 << " field len: " << field_len << std::endl;
@@ -79,6 +79,8 @@ int main(const int argc, const char *argv[]) {
   }
   const int num_threads = stoi(props.GetProperty("threadcount", "1"));
   bool async_test = props.GetProperty("async", "true") == "true";
+  bool encoding_by_row = props.GetProperty("encoding_by_row", "true") == "true";
+
   std::cout << "async:" << async_test << std::endl;
 
   ycsbc::MixedWorkload mixed_workload;
@@ -106,11 +108,11 @@ int main(const int argc, const char *argv[]) {
           core_workload->GetRecordCount() / core_workload->GetThreadCount();
       if( async_test == true ){
         actual_load_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
-                                         core_workload, thread_ops, true,
+                                         core_workload, thread_ops, true, encoding_by_row,
                                          histogram_tmp));
       }else{
         actual_load_ops.emplace_back(async(launch::deferred, DelegateClient, db.get(),
-                                         core_workload, thread_ops, true,
+                                         core_workload, thread_ops, true, encoding_by_row,
                                          histogram_tmp));
       }
       total_ops += thread_ops;
@@ -169,11 +171,11 @@ int main(const int argc, const char *argv[]) {
         core_workload->GetOperationCount() / core_workload->GetThreadCount();
     if( async_test == true ){
       actual_transaction_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
-                                              core_workload, thread_ops, false,
+                                              core_workload, thread_ops, false, encoding_by_row,
                                               histogram_tmp));
     } else {
       actual_transaction_ops.emplace_back(async(launch::deferred, DelegateClient, db.get(),
-                                              core_workload, thread_ops, false,
+                                              core_workload, thread_ops, false, encoding_by_row,
                                               histogram_tmp));
     }
 
@@ -277,6 +279,14 @@ string ParseCommandLine(int argc, const char *argv[],
       }
       props.SetProperty("async", argv[argindex]);
       argindex++;
+    } else if (strcmp(argv[argindex], "-encoding_by_row") == 0) {
+      argindex++;
+      if (argindex >= argc) {
+        UsageMessage(argv[0]);
+        exit(0);
+      }
+      props.SetProperty("encoding_by_row", argv[argindex]);
+      argindex++;
     } else if (strcmp(argv[argindex], "-P") == 0) {
       argindex++;
       if (argindex >= argc) {
@@ -322,6 +332,7 @@ void UsageMessage(const char *command) {
           "files can"
        << endl;
   cout << "  -async true: run clients with threads concurrently" << endl;
+  cout << "  -encoding_by_row true: switching from encoding by row to column" << endl;
   cout << "                   be specified, and will be processed in the order "
           "specified"
        << endl;

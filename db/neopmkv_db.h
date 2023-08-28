@@ -31,7 +31,7 @@ public:
 
   // init the schema
   uint64_t CreateSchema(std::string schema_name, size_t field_count,
-                        size_t field_len) {
+                        size_t field_len, bool encoding_by_row) override {
     std::vector<NKV::SchemaField> fields;
     field_count_ = field_count;
     field_len_ = field_len;
