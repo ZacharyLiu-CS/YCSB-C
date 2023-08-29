@@ -27,7 +27,7 @@ class ZipfianGenerator : public Generator<uint64_t> {
   ZipfianGenerator(uint64_t min, uint64_t max,
                    double zipfian_const = kZipfianConst) :
       num_items_(max - min + 1), base_(min), theta_(zipfian_const),
-      zeta_n_(0), n_for_zeta_(0) {
+      zeta_n_(0), n_for_zeta_(0), max_(max) {
     assert(num_items_ >= 2 && num_items_ < kMaxNumItems);
     zeta_2_ = Zeta(2, theta_);
     alpha_ = 1.0 / (1.0 - theta_);
@@ -45,6 +45,8 @@ class ZipfianGenerator : public Generator<uint64_t> {
   uint64_t Next() { return Next(num_items_); }
 
   uint64_t Last();
+
+  uint64_t Max(){return max_;}
   
  private:
   ///
@@ -87,6 +89,8 @@ class ZipfianGenerator : public Generator<uint64_t> {
   // Computed parameters for generating the distribution
   double theta_, zeta_n_, eta_, alpha_, zeta_2_;
   uint64_t n_for_zeta_; /// Number of items used to compute zeta_n
+
+  uint64_t max_;
   inline thread_local static uint64_t last_value_;
   
 };

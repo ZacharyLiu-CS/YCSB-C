@@ -138,6 +138,9 @@ public:
   static const std::string RECORD_COUNT_PROPERTY;
   static const std::string OPERATION_COUNT_PROPERTY;
 
+  static const std::string PARETO_K;
+  static const std::string PARETO_THETA;
+  static const std::string PARETO_SIGMA;
   ///
   /// Initialize the scenario.
   /// Called once, in the main client thread, before any operations are started.
@@ -164,7 +167,7 @@ public:
   }
   std::string GetWorkloadType() { return workload_type_; }
   std::pair<size_t, size_t> GetValueStructure() {
-    return {field_count_, field_len_generator_->Next()};
+    return {field_count_, field_len_generator_->Max()};
   }
   void InitializeTypeId(uint64_t new_id) {
     uint64_t now_type_id = type_id_.load(std::memory_order_acquire);

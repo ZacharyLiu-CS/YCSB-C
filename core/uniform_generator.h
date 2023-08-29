@@ -20,15 +20,20 @@ namespace ycsbc {
 class UniformGenerator : public Generator<uint64_t> {
 public:
   // Both min and max are inclusive
-  UniformGenerator(uint64_t min, uint64_t max) : dist_(min, max) { Next(); }
+  UniformGenerator(uint64_t min, uint64_t max) : dist_(min, max) {
+    Next();
+    max_ = max;
+  }
 
   uint64_t Next();
   uint64_t Last();
+  uint64_t Max() { return max_; }
 
 private:
   inline thread_local static std::mt19937_64 generator_;
   std::uniform_int_distribution<uint64_t> dist_;
   uint64_t last_int_;
+  uint64_t max_;
 };
 
 inline uint64_t UniformGenerator::Next() {

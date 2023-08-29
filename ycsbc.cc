@@ -35,16 +35,16 @@ void UsageMessage(const char *command);
 bool StrStartWith(const char *str, const char *pre);
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 
-int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl,
-                   const int num_ops, bool is_loading, bool encoding_by_row,
+int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
+                   bool is_loading, bool encoding_by_row,
                    shared_ptr<utils::Histogram> histogram) {
   utils::Timer<utils::t_microseconds> timer;
   ycsbc::Client client(db, wl);
   while (wl->GetTypeId() == UINT64_MAX) {
     if (wl->getCreateSchemaRight() == true) {
       auto [field_count, field_len] = wl->GetValueStructure();
-      auto schema_id =
-          db->CreateSchema(wl->GetWorkloadType(), field_count, field_len, encoding_by_row);
+      auto schema_id = db->CreateSchema(wl->GetWorkloadType(), field_count,
+                                        field_len, encoding_by_row);
       std::cout << "we got schema id: " << schema_id
                 << " field count: " << field_count
                 << " field len: " << field_len << std::endl;
@@ -78,8 +78,11 @@ int main(const int argc, const char *argv[]) {
     exit(0);
   }
   const int num_threads = stoi(props.GetProperty("threadcount", "1"));
+
   bool async_test = props.GetProperty("async", "true") == "true";
   bool encoding_by_row = props.GetProperty("encoding_by_row", "true") == "true";
+
+  const int output_perf_interval = stoi(props.GetProperty("output_perf_intervalt"), 0);
 
   std::cout << "async:" << async_test << std::endl;
 
@@ -106,14 +109,14 @@ int main(const int argc, const char *argv[]) {
       auto core_workload = mixed_workload.GetNext();
       int thread_ops =
           core_workload->GetRecordCount() / core_workload->GetThreadCount();
-      if( async_test == true ){
-        actual_load_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
-                                         core_workload, thread_ops, true, encoding_by_row,
-                                         histogram_tmp));
-      }else{
-        actual_load_ops.emplace_back(async(launch::deferred, DelegateClient, db.get(),
-                                         core_workload, thread_ops, true, encoding_by_row,
-                                         histogram_tmp));
+      if (async_test == true) {
+        actual_load_ops.emplace_back(
+            async(launch::async, DelegateClient, db.get(), core_workload,
+                  thread_ops, true, encoding_by_row, histogram_tmp));
+      } else {
+        actual_load_ops.emplace_back(
+            async(launch::deferred, DelegateClient, db.get(), core_workload,
+                  thread_ops, true, encoding_by_row, histogram_tmp));
       }
       total_ops += thread_ops;
     }
@@ -134,11 +137,11 @@ int main(const int argc, const char *argv[]) {
     for (auto &h : histogram_list) {
       histogram.Merge(*h);
     }
-  double duration = 0;
-  if( async_test == true) 
-    duration = histogram.Sum() / (num_threads * histogram.GetRecordUnit());
-  else
-    duration = histogram.Sum() / (histogram.GetRecordUnit());
+    double duration = 0;
+    if (async_test == true)
+      duration = histogram.Sum() / (num_threads * histogram.GetRecordUnit());
+    else
+      duration = histogram.Sum() / (histogram.GetRecordUnit());
 
     cerr << "# Loading records:\t" << sum << endl;
     cerr << "Load Perf: " << props["dbname"] << '\t' << file_name << '\t'
@@ -169,14 +172,14 @@ int main(const int argc, const char *argv[]) {
     auto core_workload = mixed_workload.GetNext();
     int thread_ops =
         core_workload->GetOperationCount() / core_workload->GetThreadCount();
-    if( async_test == true ){
-      actual_transaction_ops.emplace_back(async(launch::async, DelegateClient, db.get(),
-                                              core_workload, thread_ops, false, encoding_by_row,
-                                              histogram_tmp));
+    if (async_test == true) {
+      actual_transaction_ops.emplace_back(
+          async(launch::async, DelegateClient, db.get(), core_workload,
+                thread_ops, false, encoding_by_row, histogram_tmp));
     } else {
-      actual_transaction_ops.emplace_back(async(launch::deferred, DelegateClient, db.get(),
-                                              core_workload, thread_ops, false, encoding_by_row,
-                                              histogram_tmp));
+      actual_transaction_ops.emplace_back(
+          async(launch::deferred, DelegateClient, db.get(), core_workload,
+                thread_ops, false, encoding_by_row, histogram_tmp));
     }
 
     total_ops += thread_ops;
@@ -199,7 +202,7 @@ int main(const int argc, const char *argv[]) {
 
   db->Close();
   double duration = 0;
-  if( async_test == true) 
+  if (async_test == true)
     duration = histogram.Sum() / (num_threads * histogram.GetRecordUnit());
   else
     duration = histogram.Sum() / (histogram.GetRecordUnit());
@@ -215,7 +218,15 @@ string ParseCommandLine(int argc, const char *argv[],
   int argindex = 1;
   string filename;
   while (argindex < argc && StrStartWith(argv[argindex], "-")) {
-    if (strcmp(argv[argindex], "-threads") == 0) {
+    if (strcmp(argv[argindex], "-help") == 0) {
+      argindex++;
+      UsageMessage(argv[0]);
+      if (argindex >= argc) {
+        exit(0);
+      }
+      props.SetProperty("threadcount", argv[argindex]);
+      argindex++;
+    } else if (strcmp(argv[argindex], "-threads") == 0) {
       argindex++;
       if (argindex >= argc) {
         UsageMessage(argv[0]);
@@ -287,6 +298,14 @@ string ParseCommandLine(int argc, const char *argv[],
       }
       props.SetProperty("encoding_by_row", argv[argindex]);
       argindex++;
+    } else if (strcmp(argv[argindex], "-output_perf_interval") == 0) {
+      argindex++;
+      if (argindex >= argc) {
+        UsageMessage(argv[0]);
+        exit(0);
+      }
+      props.SetProperty("output_perf_interval", argv[argindex]);
+      argindex++;
     } else if (strcmp(argv[argindex], "-P") == 0) {
       argindex++;
       if (argindex >= argc) {
@@ -321,22 +340,24 @@ string ParseCommandLine(int argc, const char *argv[],
 void UsageMessage(const char *command) {
   cout << "Usage: " << command << " [options]" << endl;
   cout << "Options:" << endl;
-  cout << "  -threads n: execute using n threads (default: 1)" << endl;
-  cout << "  -db dbname: specify the name of the DB to use (default: basic)"
+  cout << "  -threads [n]: execute using n threads (default: 1)" << endl;
+  cout << "  -db [dbname]: specify the name of the DB to use (default: basic)"
        << endl;
-  cout << "  -dbpath: specify the path of DB location" << endl;
-  cout << "  -skipload: whether to run the load phase, sometime you can run on "
-          "an existing database"
+  cout << "  -dbpath [path]: specify the path of DB location" << endl;
+  cout << "  -skipload [true/false]: whether to run the load phase, sometime "
+          "you can run on  an existing database"
        << endl;
-  cout << "  -P propertyfile: load properties from the given file. Multiple "
-          "files can"
+  cout << "  -P [propertyfile]: load properties from the given file. Multiple "
+          "files can be specified, and will be processed in the order "
        << endl;
-  cout << "  -async true: run clients with threads concurrently" << endl;
-  cout << "  -encoding_by_row true: switching from encoding by row to column" << endl;
-  cout << "                   be specified, and will be processed in the order "
-          "specified"
+  cout << "  -async [true/false]: run clients with threads concurrently"
        << endl;
-       
+  cout << "  -encoding_by_row [true/false]: switching from encoding by row to "
+          "column"
+       << endl;
+  cout << "  -output_perf_interval [0,1,2]: print performance by interval (0 "
+          "means disable, 1 means print every 1 second) "
+       << endl;
 }
 
 inline bool StrStartWith(const char *str, const char *pre) {

@@ -36,6 +36,7 @@ NEOPMKV::NEOPMKV(const char *dbfilename) : no_found_(0) {
         nc->max_page_num_, nc->rw_micro_, nc->gc_threshold_,
         nc->gc_interval_micro_, nc->hit_threshold_);
     enable_schema_aware_ = nc->enable_schema_aware_;
+    enable_variable_field_ = nc->enable_variable_field_;
   }
   if (neopmkv_ == nullptr) {
     LOGOUT("init neopmkv failed!");
@@ -131,9 +132,7 @@ Status NEOPMKV::Insert(const std::string &table, const std::string &key,
                        std::vector<KVPair> &values) {
   std::vector<NKV::Value> v;
   GetSecondElementToVec(values, v);
-  for(auto &i : v){
-    std::cout << i << "-----" << std::endl;
-  }
+
   NKV::SchemaId schemaId = key[3] - '0';
   NKV::Key read_key(schemaId, CoreWorkload::GetIntFromKey(key));
   auto s = neopmkv_->Put(read_key, v);

@@ -35,30 +35,39 @@ public:
     std::vector<NKV::SchemaField> fields;
     field_count_ = field_count;
     field_len_ = field_len;
-    for (auto i = 0; i < field_count; i++) {
-      std::string field_name = std::string("field").append(std::to_string(i));
-      // std::cout << "field name size: " << field_name.size() << std::endl;
-      fields.push_back(
-          NKV::SchemaField(NKV::FieldType::STRING, field_name, field_len));
+    if (enable_variable_field_ == false) {
+      for (auto i = 0; i < field_count; i++) {
+        std::string field_name = std::string("field").append(std::to_string(i));
+        // std::cout << "field name size: " << field_name.size() << std::endl;
+        fields.push_back(
+            NKV::SchemaField(NKV::FieldType::STRING, field_name, field_len));
+      }
+    } else {
+      for (auto i = 0; i < field_count; i++) {
+        std::string field_name = std::string("field").append(std::to_string(i));
+        // std::cout << "field name size: " << field_name.size() << std::endl;
+        fields.push_back(
+            NKV::SchemaField(NKV::FieldType::VARSTR, field_name));
+      }
     }
     return neopmkv_->CreateSchema(fields, 0, schema_name);
   }
 
   Status Read(const std::string &table, const std::string &key,
               const std::vector<std::string> *fields,
-              std::vector<KVPair> &result);
+              std::vector<KVPair> &result) override;
 
   Status Scan(const std::string &table, const std::string &key, int len,
               const std::vector<std::string> *fields,
-              std::vector<std::vector<KVPair>> &result);
+              std::vector<std::vector<KVPair>> &result) override;
 
   Status Insert(const std::string &table, const std::string &key,
-                std::vector<KVPair> &values);
+                std::vector<KVPair> &values) override;
 
   Status Update(const std::string &table, const std::string &key,
-                std::vector<KVPair> &values);
+                std::vector<KVPair> &values) override;
 
-  Status Delete(const std::string &table, const std::string &key);
+  Status Delete(const std::string &table, const std::string &key) override;
 
   void printStats();
 
@@ -96,6 +105,8 @@ private:
   NKV::NeoPMKV *neopmkv_ = nullptr;
   std::atomic<unsigned> no_found_;
   bool enable_schema_aware_ = true;
+  bool enable_variable_field_ = false;
+
   size_t field_count_ = 0;
   size_t field_len_ = 0;
   typedef std::chrono::high_resolution_clock Time;

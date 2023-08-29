@@ -8,6 +8,7 @@
 
 #include "core_workload.h"
 #include "const_generator.h"
+#include "pareto_generator.h"
 #include "scrambled_zipfian_generator.h"
 #include "skewed_latest_generator.h"
 #include "uniform_generator.h"
@@ -57,6 +58,12 @@ const string CoreWorkload::REQUEST_DISTRIBUTION_PROPERTY =
     "requestdistribution";
 const string CoreWorkload::REQUEST_DISTRIBUTION_DEFAULT = "uniform";
 
+const string CoreWorkload::PARETO_K = "pareto_k";
+
+const string CoreWorkload::PARETO_THETA = "pareto_theta";
+
+const string CoreWorkload::PARETO_SIGMA = "pareto_sigma";
+
 const string CoreWorkload::ZIPFIAN_CONST_PROPERTY = "zipfianconst";
 const string CoreWorkload::ZIPFIAN_CONST_DEFAULT = "0.9";
 
@@ -96,8 +103,8 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
       p.GetProperty(SCAN_PROPORTION_PROPERTY, SCAN_PROPORTION_DEFAULT));
   double readmodifywrite_proportion = std::stod(p.GetProperty(
       READMODIFYWRITE_PROPORTION_PROPERTY, READMODIFYWRITE_PROPORTION_DEFAULT));
-  double zipfian_const = std::stod(
-      p.GetProperty(ZIPFIAN_CONST_PROPERTY, ZIPFIAN_CONST_DEFAULT));
+  double zipfian_const =
+      std::stod(p.GetProperty(ZIPFIAN_CONST_PROPERTY, ZIPFIAN_CONST_DEFAULT));
 
   record_count_ = std::stoi(p.GetProperty(RECORD_COUNT_PROPERTY));
   op_count_ = std::stoi(p.GetProperty(OPERATION_COUNT_PROPERTY));
@@ -156,7 +163,7 @@ void CoreWorkload::Init(const utils::Properties &p, size_t thread_count) {
     // and pick another key.
     int new_keys = (int)(op_count_ * insert_proportion * 2); // a fudge factor
     key_chooser_ = new ScrambledZipfianGenerator(
-        insert_start, insert_start + record_count_ + new_keys , zipfian_const);
+        insert_start, insert_start + record_count_ + new_keys, zipfian_const);
 
   } else if (request_dist == "latest") {
     key_chooser_ = new SkewedLatestGenerator(insert_key_sequence_);
@@ -191,6 +198,14 @@ CoreWorkload::GetFieldLenGenerator(const utils::Properties &p) {
     return new UniformGenerator(1, field_len);
   } else if (field_len_dist == "zipfian") {
     return new ZipfianGenerator(1, field_len);
+  } else if (field_len_dist == "pareto") {
+    double k = std::stod(p.GetProperty(PARETO_K));
+    double theta = std::stod(p.GetProperty(PARETO_THETA));
+    double sigma = std::stod(p.GetProperty(PARETO_SIGMA));
+    size_t record_count = std::stoi(p.GetProperty(RECORD_COUNT_PROPERTY));
+    size_t op_count = std::stoi(p.GetProperty(OPERATION_COUNT_PROPERTY));
+    uint64_t num = record_count > op_count ? record_count : op_count;
+    return new ParetoGenerator(num, theta, k, sigma);
   } else {
     throw utils::Exception("Unknown field length distribution: " +
                            field_len_dist);
@@ -198,17 +213,19 @@ CoreWorkload::GetFieldLenGenerator(const utils::Properties &p) {
 }
 
 void CoreWorkload::BuildValues(std::vector<ycsbc::DB::KVPair> &values) {
+  auto field_len = field_len_generator_->Next();
   for (int i = 0; i < field_count_; ++i) {
     ycsbc::DB::KVPair pair;
     pair.first.append("field").append(std::to_string(i));
-    pair.second.append(field_len_generator_->Next(), utils::RandomPrintChar());
+    pair.second.append(field_len, utils::RandomPrintChar());
     values.push_back(pair);
   }
 }
 
 void CoreWorkload::BuildUpdate(std::vector<ycsbc::DB::KVPair> &update) {
+  auto field_len = field_len_generator_->Next();
   ycsbc::DB::KVPair pair;
   pair.first.append(NextFieldName());
-  pair.second.append(field_len_generator_->Next(), utils::RandomPrintChar());
+  pair.second.append(field_len, utils::RandomPrintChar());
   update.push_back(pair);
 }

@@ -28,9 +28,12 @@ class DiscreteGenerator : public Generator<Value> {
   Value Next();
   Value Last() { return last_; }
 
+  Value Max() {return max_;}
+
  private:
   std::vector<std::pair<Value, double>> values_;
   double sum_;
+  Value max_;
   std::atomic<Value> last_;
 };
 
@@ -41,6 +44,7 @@ inline void DiscreteGenerator<Value>::AddValue(Value value, double weight) {
   }
   values_.push_back(std::make_pair(value, weight));
   sum_ += weight;
+  if(value > max_)max_ = value;
 }
 
 template <typename Value>

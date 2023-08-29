@@ -92,6 +92,7 @@ struct neopmkv_config : public config_templates {
   bool async_pbrb_;
   bool async_gc_;
   bool inplace_update_opt_;
+  bool enable_variable_field_;
   uint64_t max_page_num_;
   uint64_t rw_micro_;
   double gc_threshold_;
@@ -278,6 +279,7 @@ template <> struct convert<ycsbc::neopmkv_config> {
     node.push_back(nc.async_pbrb_);
     node.push_back(nc.async_gc_);
     node.push_back(nc.inplace_update_opt_);
+    node.push_back(nc.enable_variable_field_);
     node.push_back(nc.max_page_num_);
     node.push_back(nc.rw_micro_);
     node.push_back(nc.gc_threshold_);
@@ -299,6 +301,7 @@ template <> struct convert<ycsbc::neopmkv_config> {
     nc.async_pbrb_ = node["async_pbrb"].as<bool>();
     nc.async_gc_ = node["async_gc"].as<bool>();
     nc.inplace_update_opt_= node["inplace_update_opt"].as<bool>();
+    nc.enable_variable_field_ = node["enable_variable_field"].as<bool>();
     nc.max_page_num_ = node["max_page_num"].as<uint64_t>();
     nc.rw_micro_ = node["rw_micro"].as<uint64_t>();
     nc.gc_threshold_ = node["gc_threshold"].as<double>();
