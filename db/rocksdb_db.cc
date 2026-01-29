@@ -36,13 +36,13 @@ namespace ycsbc {
     options.max_background_jobs = dc.thread_compaction_ + 4;
     options.write_buffer_size = dc.memtable_size_;
     options.target_file_size_base = dc.sst_file_size_;
-    rocksdb::BlockBasedTableOptions block_options;
     block_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(dc.bloom_bits_));
     block_options.block_cache = rocksdb::NewLRUCache(dc.block_cache_size_);
 
     options.table_factory.reset(rocksdb::NewBlockBasedTableFactory(block_options));
     options.statistics = rocksdb::CreateDBStatistics();
 
+    cerr << "block cache usage: " << block_options.block_cache->GetUsage() << endl;
     rocksdb::Status s = rocksdb::DB::Open(options,dbfilename,&db_);
     if(!s.ok()){
       cerr << "init rocksdb failed!"<<endl;
@@ -53,7 +53,9 @@ namespace ycsbc {
 
   int RocksDB::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields, std::vector<KVPair> &result){
     std::string value;
-    rocksdb::Status s = db_->Get(rocksdb::ReadOptions(),key,&value);
+    auto read_options = rocksdb::ReadOptions();
+    read_options.fill_cache = false;   
+    rocksdb::Status s = db_->Get(read_options,key,&value);
     if(!s.ok()){
       cerr << s.ToString() << endl;
       exit(0);
@@ -67,7 +69,9 @@ namespace ycsbc {
   }
 
   int RocksDB::Scan(const std::string &table, const std::string &key, int len, const std::vector<std::string> *fields, std::vector<std::vector<KVPair> > &result){
-    rocksdb::Iterator* iter = db_->NewIterator(rocksdb::ReadOptions());
+    auto read_options = rocksdb::ReadOptions();
+    read_options.fill_cache = false;
+    rocksdb::Iterator* iter = db_->NewIterator(read_options);
     iter->Seek(key);
     for( int i = 0; i < len; i++ ){
       if(!iter->Valid() || iter->value().empty() ){
@@ -98,9 +102,11 @@ namespace ycsbc {
 
   void RocksDB::printStats(){
     std::string stats;
-    db_->GetProperty("rocksdb.stats",&stats);
-    cerr << stats << endl;
-    cerr << options.statistics->ToString() << endl;
+    cerr << "block cache usage: " << block_options.block_cache->GetUsage() << endl;
+    cerr << "block cache pinned usage: " << block_options.block_cache->GetPinnedUsage() << endl;
+    // db_->GetProperty("rocksdb.stats",&stats);
+    // cerr << stats << endl;
+    // cerr << options.statistics->ToString() << endl;
   }
 
   RocksDB::~RocksDB(){

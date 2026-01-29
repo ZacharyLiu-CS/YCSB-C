@@ -13,6 +13,7 @@
 #include "core/config_reader.h"
 #include "rocksdb/db.h"
 #include "rocksdb/options.h"
+#include "rocksdb/table.h"
 
 namespace ycsbc {
 
@@ -42,6 +43,7 @@ namespace ycsbc {
     private:
       rocksdb::DB *db_;
       rocksdb::Options options;
+      rocksdb::BlockBasedTableOptions block_options;
       unsigned no_found;
 
   }; //end of YCSB
