@@ -7,7 +7,6 @@ project(ycsbc)
 #3. specify c++ compiler version
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -pthread ")
-
 #4. head file path
 include_directories(
   ${PROJECT_SOURCE_DIR}
@@ -24,7 +23,7 @@ link_directories(
   ${PROJECT_SOURCE_DIR}/third_party/yaml-cpp/build/
   ${PROJECT_SOURCE_DIR}/third_party/googletest/build/lib/
   ${PROJECT_SOURCE_DIR}/db_impl/leveldb/build/
-  ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/build/
+  ${PROJECT_SOURCE_DIR}/db_impl/rocksdb/
   )
 
 #6. source code file path
@@ -39,6 +38,7 @@ file(GLOB SOURCE_FILE
 #7. define the executable
 add_executable(${PROJECT_NAME} ${MAIN_FILE} ${SOURCE_FILE})
 target_link_libraries(${PROJECT_NAME}
+  PRIVATE
   pthread
   leveldb
   rocksdb
@@ -73,6 +73,11 @@ if (GTEST_FOUND)
       rocksdb
       pthread
       snappy
+      zstd
+      lz4
+      bz2
+      z
+      dl
       )
     add_test(NAME ${testname} COMMAND ${testname})
   ENDFOREACH(testsourcefile ${TEST_FILE})
